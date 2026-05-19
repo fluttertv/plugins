@@ -1,0 +1,41 @@
+# Dart/Flutter
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+pubspec.lock
+.flutter-plugins
+.flutter-plugins-dependencies
+.flutter-versions
+**/doc/api/
+
+# Generated Flutter tooling / embedder artifacts (regenerated per build)
+**/Flutter/Flutter.framework/
+**/Flutter/App.framework/
+**/Flutter/ephemeral/
+**/Flutter/flutter_assets/
+**/Flutter/Generated.xcconfig
+**/Flutter/flutter_export_environment.sh
+**/Flutter/.last_build_id
+**/.last_build_id
+**/tvos_metallibs/
+**/ios/Flutter/flutter_export_environment.sh
+
+# CocoaPods (resolved per machine)
+**/Pods/
+**/.symlinks/
+**/Podfile.lock
+
+# Xcode
+**/xcuserdata/
+**/DerivedData/
+*.xcuserstate
+*.moved-aside
+**/*.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+
+# IDE / OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
