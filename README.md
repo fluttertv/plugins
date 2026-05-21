@@ -14,25 +14,23 @@ implementations of popular pub.dev plugins, produced with the
 
 ## List of plugins
 
-Every plugin below **builds for tvOS** (`flutter-tvos build tvos
---simulator --debug` is green). "Verified" shows how far it was
-exercised: **sim** = tvOS simulator, **device** = a physical Apple TV.
-Each package's `README.md` has the full ✅/⚠️/❌ API breakdown and its
-`PORTING_REPORT.md` has the port detail + checklist.
+Every plugin below has a tvOS implementation; full details (API
+coverage, disabled regions, and porting notes) are available in each
+package's `README.md` and `PORTING_REPORT.md`.
 
-| Plugin | Upstream | tvOS support | Verified |
-|---|---|---|---|
-| [`shared_preferences_tvos`](packages/shared_preferences_tvos) [![pub](https://img.shields.io/pub/v/shared_preferences_tvos.svg)](https://pub.dev/packages/shared_preferences_tvos) | [`shared_preferences`](https://pub.dev/packages/shared_preferences) | ✅ Full (`NSUserDefaults`) | sim + **device** 63/63 |
-| [`video_player_tvos`](packages/video_player_tvos) [![pub](https://img.shields.io/pub/v/video_player_tvos.svg)](https://pub.dev/packages/video_player_tvos) | [`video_player`](https://pub.dev/packages/video_player) | ✅ Full — asset/network/file + texture | sim + **device** 14/14 |
-| [`wakelock_plus_tvos`](packages/wakelock_plus_tvos) [![pub](https://img.shields.io/pub/v/wakelock_plus_tvos.svg)](https://pub.dev/packages/wakelock_plus_tvos) | [`wakelock_plus`](https://pub.dev/packages/wakelock_plus) | ✅ Full | sim + **device** 2/2 |
-| [`connectivity_plus_tvos`](packages/connectivity_plus_tvos) [![pub](https://img.shields.io/pub/v/connectivity_plus_tvos.svg)](https://pub.dev/packages/connectivity_plus_tvos) | [`connectivity_plus`](https://pub.dev/packages/connectivity_plus) | ⚠️ Works; no cellular result | sim + **device** |
-| [`path_provider_tvos`](packages/path_provider_tvos) [![pub](https://img.shields.io/pub/v/path_provider_tvos.svg)](https://pub.dev/packages/path_provider_tvos) | [`path_provider`](https://pub.dev/packages/path_provider) | ⚠️ Works; no Downloads/External | sim + **device** |
-| [`flutter_secure_storage_tvos`](packages/flutter_secure_storage_tvos) [![pub](https://img.shields.io/pub/v/flutter_secure_storage_tvos.svg)](https://pub.dev/packages/flutter_secure_storage_tvos) | [`flutter_secure_storage`](https://pub.dev/packages/flutter_secure_storage) | ⚠️ Keychain works; no biometric gating | sim |
-| [`device_info_plus_tvos`](packages/device_info_plus_tvos) [![pub](https://img.shields.io/pub/v/device_info_plus_tvos.svg)](https://pub.dev/packages/device_info_plus_tvos) | [`device_info_plus`](https://pub.dev/packages/device_info_plus) | ⚠️ Works; `isiOSAppOnMac/Vision` = false | sim |
-| [`package_info_plus_tvos`](packages/package_info_plus_tvos) [![pub](https://img.shields.io/pub/v/package_info_plus_tvos.svg)](https://pub.dev/packages/package_info_plus_tvos) | [`package_info_plus`](https://pub.dev/packages/package_info_plus) | ⚠️ Works; `installerStore` = null | sim |
-| [`audioplayers_tvos`](packages/audioplayers_tvos) [![pub](https://img.shields.io/pub/v/audioplayers_tvos.svg)](https://pub.dev/packages/audioplayers_tvos) | [`audioplayers`](https://pub.dev/packages/audioplayers) | ⚠️ Plays; audio-routing options no-op | sim |
-| [`flutter_tts_tvos`](packages/flutter_tts_tvos) [![pub](https://img.shields.io/pub/v/flutter_tts_tvos.svg)](https://pub.dev/packages/flutter_tts_tvos) | [`flutter_tts`](https://pub.dev/packages/flutter_tts) | ⚠️ Speaks; audio-routing options no-op | sim |
-| [`sqflite_tvos`](packages/sqflite_tvos) [![pub](https://img.shields.io/pub/v/sqflite_tvos.svg)](https://pub.dev/packages/sqflite_tvos) | [`sqflite`](https://pub.dev/packages/sqflite) | ✅ Full SQLite | sim |
+| Plugin | Upstream |
+|---|---|
+| [`shared_preferences_tvos`](packages/shared_preferences_tvos) [![pub](https://img.shields.io/pub/v/shared_preferences_tvos.svg)](https://pub.dev/packages/shared_preferences_tvos) | [`shared_preferences`](https://pub.dev/packages/shared_preferences) |
+| [`video_player_tvos`](packages/video_player_tvos) [![pub](https://img.shields.io/pub/v/video_player_tvos.svg)](https://pub.dev/packages/video_player_tvos) | [`video_player`](https://pub.dev/packages/video_player) |
+| [`wakelock_plus_tvos`](packages/wakelock_plus_tvos) [![pub](https://img.shields.io/pub/v/wakelock_plus_tvos.svg)](https://pub.dev/packages/wakelock_plus_tvos) | [`wakelock_plus`](https://pub.dev/packages/wakelock_plus) |
+| [`connectivity_plus_tvos`](packages/connectivity_plus_tvos) [![pub](https://img.shields.io/pub/v/connectivity_plus_tvos.svg)](https://pub.dev/packages/connectivity_plus_tvos) | [`connectivity_plus`](https://pub.dev/packages/connectivity_plus) |
+| [`path_provider_tvos`](packages/path_provider_tvos) [![pub](https://img.shields.io/pub/v/path_provider_tvos.svg)](https://pub.dev/packages/path_provider_tvos) | [`path_provider`](https://pub.dev/packages/path_provider) |
+| [`flutter_secure_storage_tvos`](packages/flutter_secure_storage_tvos) [![pub](https://img.shields.io/pub/v/flutter_secure_storage_tvos.svg)](https://pub.dev/packages/flutter_secure_storage_tvos) | [`flutter_secure_storage`](https://pub.dev/packages/flutter_secure_storage) |
+| [`device_info_plus_tvos`](packages/device_info_plus_tvos) [![pub](https://img.shields.io/pub/v/device_info_plus_tvos.svg)](https://pub.dev/packages/device_info_plus_tvos) | [`device_info_plus`](https://pub.dev/packages/device_info_plus) |
+| [`package_info_plus_tvos`](packages/package_info_plus_tvos) [![pub](https://img.shields.io/pub/v/package_info_plus_tvos.svg)](https://pub.dev/packages/package_info_plus_tvos) | [`package_info_plus`](https://pub.dev/packages/package_info_plus) |
+| [`audioplayers_tvos`](packages/audioplayers_tvos) [![pub](https://img.shields.io/pub/v/audioplayers_tvos.svg)](https://pub.dev/packages/audioplayers_tvos) | [`audioplayers`](https://pub.dev/packages/audioplayers) |
+| [`flutter_tts_tvos`](packages/flutter_tts_tvos) [![pub](https://img.shields.io/pub/v/flutter_tts_tvos.svg)](https://pub.dev/packages/flutter_tts_tvos) | [`flutter_tts`](https://pub.dev/packages/flutter_tts) |
+| [`sqflite_tvos`](packages/sqflite_tvos) [![pub](https://img.shields.io/pub/v/sqflite_tvos.svg)](https://pub.dev/packages/sqflite_tvos) | [`sqflite`](https://pub.dev/packages/sqflite) |
 
 ### Evaluated but not provided
 
@@ -203,8 +201,8 @@ plugins/
 
 - Federate via the upstream `*_platform_interface`; suffix `_tvos`.
 - Target tvOS 13.0+; guard shared iOS code with `#if os(tvOS)`.
-- Document every API as ✅ supported / ⚠️ partial / ❌ unsupported in
-  the package README (the most useful thing for users).
+- Document API support and any disabled regions in the package `README.md`
+  and `PORTING_REPORT.md` so users can assess compatibility.
 - A package only ships if it builds green on tvOS.
 
 ## License
