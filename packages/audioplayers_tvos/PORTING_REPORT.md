@@ -94,7 +94,7 @@ None flagged automatically. You should still skim `tvos/Classes/` — regex-base
 - [ ] Review every `⚠️ partial` method against a real Apple TV (behaviour differs from iOS). — simulator-verified; on-device pass still recommended
 - [x] Confirm the removed imports were not load-bearing for still-supported code paths.
 - [x] `flutter-tvos build tvos --simulator --debug` from the plugin's example app compiles the generated registrant.
-- [ ] Bump the version and update `CHANGELOG.md` before publishing.
+- [x] Bump the version and update `CHANGELOG.md` before publishing.
 
 ---
 

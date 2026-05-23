@@ -45,7 +45,7 @@ This package is now a **hand-written, maintained tvOS implementation**
       `UnsupportedError` (no silent breakage).
 - [x] `flutter-tvos build tvos --simulator --debug` compiles.
 - [x] Verified on a real Apple TV (via `video_player_tvos` 14/14).
-- [ ] Bump the version and update `CHANGELOG.md` before publishing.
+- [x] Bump the version and update `CHANGELOG.md` before publishing.
 
 ---
 
