@@ -16,6 +16,7 @@ pubspec.lock
 **/Flutter/ephemeral/
 **/Flutter/flutter_assets/
 **/Flutter/Generated.xcconfig
+**/Flutter/GeneratedPluginRegistrant.*
 **/Flutter/flutter_export_environment.sh
 **/Flutter/.last_build_id
 **/.last_build_id

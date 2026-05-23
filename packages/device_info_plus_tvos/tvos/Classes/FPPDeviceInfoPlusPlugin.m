@@ -19,67 +19,67 @@
 - (void)handleMethodCall:(FlutterMethodCall *)call
                   result:(FlutterResult)result {
   if ([@"getDeviceInfo" isEqualToString:call.method]) {
-    result(FlutterMethodNotImplemented);  // TODO(porter): tvOS-incompatible API stubbed
-//     UIDevice *device = [UIDevice currentDevice];
-//     struct utsname un;
-//     uname(&un);
+    UIDevice *device = [UIDevice currentDevice];
+    struct utsname un;
+    uname(&un);
 
-//     NSNumber *isPhysicalNumber =
-//         [NSNumber numberWithBool:[self isDevicePhysical]];
-//     NSProcessInfo *info = [NSProcessInfo processInfo];
-//     NSNumber *isiOSAppOnMac = [NSNumber numberWithBool:NO];
-//     if (@available(iOS 14.0, tvOS 14.0, *)) {
-//       isiOSAppOnMac = [NSNumber numberWithBool:[info isiOSAppOnMac]];
-//     }
-//     NSNumber *isiOSAppOnVision = [NSNumber numberWithBool:NO];
-//     if (@available(iOS 26.1, tvOS 26.1, *)) {
-//       isiOSAppOnVision = [NSNumber numberWithBool:[info isiOSAppOnVision]];
-//     }
-//     NSError *error = nil;
-//     NSDictionary *fsAttributes = [[NSFileManager defaultManager] attributesOfFileSystemForPath:NSHomeDirectory() error:&error];
-//     NSNumber *freeSize = [NSNumber numberWithInt:-1];
-//     NSNumber *totalSize = [NSNumber numberWithInt:-1];
-//     if(fsAttributes) {
-//         freeSize = fsAttributes[NSFileSystemFreeSize];
-//         totalSize = fsAttributes[NSFileSystemSize];
-//     }
+    NSNumber *isPhysicalNumber =
+        [NSNumber numberWithBool:[self isDevicePhysical]];
+    NSProcessInfo *info = [NSProcessInfo processInfo];
 
-//     NSString *machine;
-//     NSString *deviceName;
-//     if ([self isDevicePhysical]) {
-//       machine = @(un.machine);
-//     } else {
-//       machine = [info environment][@"SIMULATOR_MODEL_IDENTIFIER"];
-//     }
-//     deviceName = [DeviceIdentifiers userKnownDeviceModel:machine];
+    // tvOS has no `isiOSAppOnMac` / `isiOSAppOnVision` selectors on
+    // `NSProcessInfo` — those flags describe the iOS-app-on-Mac and
+    // iOS-app-on-Vision execution contexts, neither of which can occur
+    // on tvOS. Report `false` unconditionally (matches the
+    // documented "not applicable on tvOS" behaviour in the README).
+    NSNumber *isiOSAppOnMac = @NO;
+    NSNumber *isiOSAppOnVision = @NO;
 
-//     NSNumber *physicalRamSize = @([NSProcessInfo processInfo].physicalMemory / 1048576); // Mb
-//     NSNumber *availableRamSize = @([self availableMemoryInbMB]);
+    NSError *error = nil;
+    NSDictionary *fsAttributes = [[NSFileManager defaultManager] attributesOfFileSystemForPath:NSHomeDirectory() error:&error];
+    NSNumber *freeSize = [NSNumber numberWithInt:-1];
+    NSNumber *totalSize = [NSNumber numberWithInt:-1];
+    if(fsAttributes) {
+        freeSize = fsAttributes[NSFileSystemFreeSize];
+        totalSize = fsAttributes[NSFileSystemSize];
+    }
 
-//     result(@{
-//       @"name" : [device name],
-//       @"systemName" : [device systemName],
-//       @"systemVersion" : [device systemVersion],
-//       @"model" : [device model],
-//       @"localizedModel" : [device localizedModel],
-//       @"modelName" : deviceName,
-//       @"identifierForVendor" : [[device identifierForVendor] UUIDString]
-//           ?: [NSNull null],
-//       @"freeDiskSize" : freeSize,
-//       @"totalDiskSize" : totalSize,
-//       @"isPhysicalDevice" : isPhysicalNumber,
-//       @"isiOSAppOnMac" : isiOSAppOnMac,
-//       @"isiOSAppOnVision" : isiOSAppOnVision,
-//       @"physicalRamSize" : physicalRamSize,
-//       @"availableRamSize" : availableRamSize,
-//       @"utsname" : @{
-//         @"sysname" : @(un.sysname),
-//         @"nodename" : @(un.nodename),
-//         @"release" : @(un.release),
-//         @"version" : @(un.version),
-//         @"machine" : machine,
-//       }
-//     });
+    NSString *machine;
+    NSString *deviceName;
+    if ([self isDevicePhysical]) {
+      machine = @(un.machine);
+    } else {
+      machine = [info environment][@"SIMULATOR_MODEL_IDENTIFIER"];
+    }
+    deviceName = [DeviceIdentifiers userKnownDeviceModel:machine];
+
+    NSNumber *physicalRamSize = @([NSProcessInfo processInfo].physicalMemory / 1048576); // Mb
+    NSNumber *availableRamSize = @([self availableMemoryInbMB]);
+
+    result(@{
+      @"name" : [device name],
+      @"systemName" : [device systemName],
+      @"systemVersion" : [device systemVersion],
+      @"model" : [device model],
+      @"localizedModel" : [device localizedModel],
+      @"modelName" : deviceName,
+      @"identifierForVendor" : [[device identifierForVendor] UUIDString]
+          ?: [NSNull null],
+      @"freeDiskSize" : freeSize,
+      @"totalDiskSize" : totalSize,
+      @"isPhysicalDevice" : isPhysicalNumber,
+      @"isiOSAppOnMac" : isiOSAppOnMac,
+      @"isiOSAppOnVision" : isiOSAppOnVision,
+      @"physicalRamSize" : physicalRamSize,
+      @"availableRamSize" : availableRamSize,
+      @"utsname" : @{
+        @"sysname" : @(un.sysname),
+        @"nodename" : @(un.nodename),
+        @"release" : @(un.release),
+        @"version" : @(un.version),
+        @"machine" : machine,
+      }
+    });
   } else {
     result(FlutterMethodNotImplemented);
   }
