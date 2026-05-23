@@ -1,0 +1,8 @@
+# Keep upstream example test media and the integration-test HTTP server
+# out of the published archive. Consumers of `audioplayers_tvos` only
+# need the README, the library, and the native code — the upstream
+# example exists for the maintainer's own integration tests and runs
+# its own Dart HTTP server with several megabytes of audio fixtures.
+example/assets/
+example/server/
+example/integration_test/
