@@ -5,12 +5,14 @@ to finish one by hand.
 
 > **Start with the porter.** Almost every package in `packages/` was
 > produced by `flutter-tvos plugin port` and then finished/verified by
-> hand — see *"How this repository was created"* in
-> [`README.md`](README.md) for the exact commands. Run that first; use
-> this document to understand the generated layout and to complete the
-> parts the porter intentionally leaves to a human (FFI/native-assets
-> skeletons, tvOS-incompatible regions it disabled, cascades). Authoring
-> a package fully by hand is the fallback, not the common path.
+> hand. See [Porting an existing plugin](https://github.com/fluttertv/flutter-tvos/blob/main/doc/port-plugin.md)
+> for the full reference, and *"How this repository was created"* in
+> [`README.md`](README.md) for the exact commands used here. Run that
+> first; use this document to understand the generated layout and to
+> complete the parts the porter intentionally leaves to a human
+> (FFI/native-assets skeletons, tvOS-incompatible regions it disabled,
+> cascades). Authoring a package fully by hand is the fallback, not the
+> common path.
 
 ## 1. Decide the shape
 

@@ -8,9 +8,9 @@ These are companions to [flutter-tvos](https://github.com/fluttertv/flutter-tvos
 implementations of popular pub.dev plugins, produced with the
 `flutter-tvos plugin port` tool and finished/verified by hand.
 
-> **Publishing status:** not yet on pub.dev — use the git dependencies
-> shown under [Usage](#usage). The pub.dev badges below will resolve
-> once published under the `fluttertv.dev` verified publisher.
+> **Published on pub.dev** under the
+> [`fluttertv.dev`](https://pub.dev/publishers/fluttertv.dev/packages)
+> verified publisher. Add them like any other plugin (`<name>_tvos: ^0.0.1`).
 
 ## List of plugins
 
@@ -82,6 +82,12 @@ with the **`flutter-tvos plugin port`** tool (part of
 [flutter-tvos](https://github.com/fluttertv/flutter-tvos)) and then
 verified — and where needed finished — by hand. This is the exact,
 reproducible workflow.
+
+> For the full porter reference — every flag, what the transformer
+> does and doesn't do, and how to read the generated `PORTING_REPORT.md`
+> — see [Porting an existing plugin](https://github.com/fluttertv/flutter-tvos/blob/main/doc/port-plugin.md)
+> in the flutter-tvos docs. The summary below is the recipe we used to
+> produce this repo.
 
 ## 0. Prerequisites
 
