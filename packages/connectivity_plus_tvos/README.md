@@ -12,8 +12,7 @@ for [flutter-tvos](https://github.com/fluttertv/flutter-tvos).
 ```yaml
 dependencies:
   connectivity_plus: ^7.x
-  connectivity_plus_tvos:
-    path: ../connectivity_plus_tvos   # or pub.dev once published
+  connectivity_plus_tvos: ^0.0.1
 ```
 
 ## tvOS support

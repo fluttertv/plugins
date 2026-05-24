@@ -11,8 +11,7 @@ for [flutter-tvos](https://github.com/fluttertv/flutter-tvos)
 ```yaml
 dependencies:
   flutter_secure_storage: ^10.x
-  flutter_secure_storage_tvos:
-    path: ../flutter_secure_storage_tvos   # or pub.dev once published
+  flutter_secure_storage_tvos: ^0.0.1
 ```
 
 ## tvOS support

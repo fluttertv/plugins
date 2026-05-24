@@ -11,8 +11,7 @@ for [flutter-tvos](https://github.com/fluttertv/flutter-tvos)
 ```yaml
 dependencies:
   flutter_tts: ^4.x
-  flutter_tts_tvos:
-    path: ../flutter_tts_tvos   # or pub.dev once published
+  flutter_tts_tvos: ^0.0.1
 ```
 
 ## tvOS support

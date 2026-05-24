@@ -12,10 +12,8 @@ for [flutter-tvos](https://github.com/fluttertv/flutter-tvos)
 ```yaml
 dependencies:
   sqflite: ^2.x
-  sqflite_tvos:
-    path: ../sqflite_tvos   # or pub.dev once published
-  path_provider_tvos:
-    path: ../path_provider_tvos   # for a writable DB directory
+  sqflite_tvos: ^0.0.1
+  path_provider_tvos: ^0.0.1   # for a writable DB directory
 ```
 
 ## tvOS support

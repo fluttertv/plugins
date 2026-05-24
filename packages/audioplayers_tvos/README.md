@@ -11,8 +11,7 @@ for [flutter-tvos](https://github.com/fluttertv/flutter-tvos)
 ```yaml
 dependencies:
   audioplayers: ^6.x
-  audioplayers_tvos:
-    path: ../audioplayers_tvos   # or pub.dev once published
+  audioplayers_tvos: ^0.0.1
 ```
 
 ## tvOS support

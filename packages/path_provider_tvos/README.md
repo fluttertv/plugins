@@ -14,8 +14,7 @@ for [flutter-tvos](https://github.com/fluttertv/flutter-tvos).
 ```yaml
 dependencies:
   path_provider: ^2.x
-  path_provider_tvos:
-    path: ../path_provider_tvos   # or pub.dev once published
+  path_provider_tvos: ^0.0.1
 ```
 
 ## tvOS support

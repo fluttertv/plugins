@@ -11,8 +11,7 @@ for [flutter-tvos](https://github.com/fluttertv/flutter-tvos).
 ```yaml
 dependencies:
   package_info_plus: ^10.x
-  package_info_plus_tvos:
-    path: ../package_info_plus_tvos   # or pub.dev once published
+  package_info_plus_tvos: ^0.0.1
 ```
 
 ## tvOS support

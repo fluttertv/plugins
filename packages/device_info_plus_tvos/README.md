@@ -11,8 +11,7 @@ for [flutter-tvos](https://github.com/fluttertv/flutter-tvos).
 ```yaml
 dependencies:
   device_info_plus: ^13.x
-  device_info_plus_tvos:
-    path: ../device_info_plus_tvos   # or pub.dev once published
+  device_info_plus_tvos: ^0.0.1
 ```
 
 Use `DeviceInfoPlugin().iosInfo` — the tvOS device maps onto the iOS

@@ -12,8 +12,7 @@ for [flutter-tvos](https://github.com/fluttertv/flutter-tvos).
 ```yaml
 dependencies:
   wakelock_plus: ^1.x
-  wakelock_plus_tvos:
-    path: ../wakelock_plus_tvos   # or pub.dev once published
+  wakelock_plus_tvos: ^0.0.1
 ```
 
 ## tvOS support
