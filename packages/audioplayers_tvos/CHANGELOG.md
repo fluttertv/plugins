@@ -15,6 +15,5 @@ Initial release — tvOS implementation of `audioplayers` for
 * **Not supported on tvOS:** Bluetooth / earpiece / speaker routing
   controls; microphone-related options.
 
-Built GREEN on the Apple TV 4K simulator. On-device verification
-recommended for audio-routing edge cases. See `README.md` and
-`PORTING_REPORT.md` for the full matrix.
+On-device verification recommended for audio-routing edge cases. See
+`README.md` and `PORTING_REPORT.md` for the full matrix.

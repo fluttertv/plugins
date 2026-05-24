@@ -4,7 +4,7 @@ tvOS implementation of [`audioplayers`](https://pub.dev/packages/audioplayers)
 for [flutter-tvos](https://github.com/fluttertv/flutter-tvos)
 (port of `audioplayers_darwin`, hand-finished for tvOS).
 
-> **Verified:** simulator build GREEN. On-device pass recommended.
+> On-device verification recommended for audio-routing edge cases.
 
 ## Usage
 

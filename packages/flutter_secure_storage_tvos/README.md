@@ -4,8 +4,6 @@ tvOS implementation of [`flutter_secure_storage`](https://pub.dev/packages/flutt
 for [flutter-tvos](https://github.com/fluttertv/flutter-tvos)
 (port of `flutter_secure_storage_darwin`, hand-finished for tvOS).
 
-> **Verified:** simulator build GREEN.
-
 ## Usage
 
 ```yaml

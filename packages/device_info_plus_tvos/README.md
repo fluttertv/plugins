@@ -4,7 +4,6 @@ tvOS implementation of [`device_info_plus`](https://pub.dev/packages/device_info
 for [flutter-tvos](https://github.com/fluttertv/flutter-tvos).
 
 > Hand-finished from `flutter-tvos plugin port`.
-> **Verified:** simulator build GREEN.
 
 ## Usage
 

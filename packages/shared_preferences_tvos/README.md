@@ -5,8 +5,7 @@ for [flutter-tvos](https://github.com/fluttertv/flutter-tvos)
 (port of `shared_preferences_foundation`).
 
 > Hand-finished from `flutter-tvos plugin port`.
-> **Verified:** simulator build GREEN **and** 63/63 integration tests
-> pass on a physical Apple TV.
+> **Verified:** 63/63 integration tests pass on a physical Apple TV.
 
 ## Usage
 

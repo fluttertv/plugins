@@ -4,8 +4,7 @@ tvOS implementation of [`connectivity_plus`](https://pub.dev/packages/connectivi
 for [flutter-tvos](https://github.com/fluttertv/flutter-tvos).
 
 > Hand-finished from `flutter-tvos plugin port`.
-> **Verified:** simulator build GREEN **and** integration tests pass on
-> a physical Apple TV.
+> **Verified:** integration tests pass on a physical Apple TV.
 
 ## Usage
 

@@ -14,6 +14,6 @@ by `flutter-tvos plugin port` (modular-SwiftPM podspec) from
   **not** in a cache / temp dir, if you need durability.
 * **Not supported on tvOS:** none for core SQLite usage.
 
-Simulator build GREEN and 14/14 integration tests pass. On-device
-verification recommended for storage-durability edge cases. See
-`README.md` and `PORTING_REPORT.md` for detail.
+14/14 integration tests pass. On-device verification recommended
+for storage-durability edge cases. See `README.md` and
+`PORTING_REPORT.md` for detail.

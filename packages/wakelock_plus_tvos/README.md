@@ -4,8 +4,7 @@ tvOS implementation of [`wakelock_plus`](https://pub.dev/packages/wakelock_plus)
 for [flutter-tvos](https://github.com/fluttertv/flutter-tvos).
 
 > Hand-finished from `flutter-tvos plugin port`.
-> **Verified:** simulator build GREEN **and** 2/2 integration tests
-> pass on a physical Apple TV.
+> **Verified:** 2/2 integration tests pass on a physical Apple TV.
 
 ## Usage
 

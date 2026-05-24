@@ -13,5 +13,4 @@ tvOS device maps onto the iOS info shape (`UIDevice`, `utsname`).
 * **Not supported on tvOS:** iOS-app-on-Mac / iOS-app-on-Vision
   context flags (meaningless on tvOS).
 
-Simulator build GREEN. See `README.md` and `PORTING_REPORT.md` for
-detail.
+See `README.md` and `PORTING_REPORT.md` for detail.

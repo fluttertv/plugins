@@ -16,6 +16,5 @@ from `flutter_tts` and hand-finished for tvOS.
 * **Not supported on tvOS:** audio-routing category options (not
   applicable on an Apple TV).
 
-Simulator build GREEN. On-device verification recommended for
-audio-routing edge cases. See `README.md` and `PORTING_REPORT.md`
-for detail.
+On-device verification recommended for audio-routing edge cases.
+See `README.md` and `PORTING_REPORT.md` for detail.

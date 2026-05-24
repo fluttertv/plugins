@@ -11,5 +11,4 @@ by `flutter-tvos plugin port`.
   Store installer-source attribution exposed).
 * **Not supported on tvOS:** none for core fields.
 
-Simulator build GREEN. See `README.md` and `PORTING_REPORT.md` for
-detail.
+See `README.md` and `PORTING_REPORT.md` for detail.

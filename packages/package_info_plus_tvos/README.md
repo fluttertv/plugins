@@ -4,7 +4,6 @@ tvOS implementation of [`package_info_plus`](https://pub.dev/packages/package_in
 for [flutter-tvos](https://github.com/fluttertv/flutter-tvos).
 
 > Hand-finished from `flutter-tvos plugin port`.
-> **Verified:** simulator build GREEN.
 
 ## Usage
 

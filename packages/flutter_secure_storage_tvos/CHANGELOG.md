@@ -18,5 +18,4 @@ from `flutter_secure_storage_darwin` and hand-finished for tvOS.
 * **Not supported on tvOS:** LocalAuthentication framework
   (biometrics) — does not exist on tvOS.
 
-Simulator build GREEN. See `README.md` and `PORTING_REPORT.md` for
-detail.
+See `README.md` and `PORTING_REPORT.md` for detail.

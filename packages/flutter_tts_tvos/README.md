@@ -4,7 +4,7 @@ tvOS implementation of [`flutter_tts`](https://pub.dev/packages/flutter_tts)
 for [flutter-tvos](https://github.com/fluttertv/flutter-tvos)
 (hand-finished for tvOS).
 
-> **Verified:** simulator build GREEN. On-device pass recommended.
+> On-device verification recommended for audio-routing edge cases.
 
 ## Usage
 
