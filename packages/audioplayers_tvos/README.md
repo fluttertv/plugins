@@ -4,8 +4,6 @@ tvOS implementation of [`audioplayers`](https://pub.dev/packages/audioplayers)
 for [flutter-tvos](https://github.com/fluttertv/flutter-tvos)
 (port of `audioplayers_darwin`, hand-finished for tvOS).
 
-> On-device verification recommended for audio-routing edge cases.
-
 ## Usage
 
 ```yaml

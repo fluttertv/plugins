@@ -15,5 +15,4 @@ Initial release — tvOS implementation of `audioplayers` for
 * **Not supported on tvOS:** Bluetooth / earpiece / speaker routing
   controls; microphone-related options.
 
-On-device verification recommended for audio-routing edge cases. See
-`README.md` and `PORTING_REPORT.md` for the full matrix.
+See `README.md` and `PORTING_REPORT.md` for the full matrix.

@@ -4,8 +4,6 @@ tvOS implementation of [`flutter_tts`](https://pub.dev/packages/flutter_tts)
 for [flutter-tvos](https://github.com/fluttertv/flutter-tvos)
 (hand-finished for tvOS).
 
-> On-device verification recommended for audio-routing edge cases.
-
 ## Usage
 
 ```yaml
