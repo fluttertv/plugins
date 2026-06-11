@@ -1,6 +1,6 @@
 name: connectivity_plus_tvos
 description: "tvOS (Apple TV) implementation of the connectivity_plus Flutter plugin, provided by flutter-tvos."
-version: 0.0.1
+version: 0.0.2
 homepage: https://fluttertv.dev
 repository: https://github.com/fluttertv/plugins/tree/main/packages/connectivity_plus_tvos
 issue_tracker: https://github.com/fluttertv/plugins/issues

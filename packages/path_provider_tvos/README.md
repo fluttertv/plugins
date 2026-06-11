@@ -14,7 +14,7 @@ for [flutter-tvos](https://github.com/fluttertv/flutter-tvos).
 ```yaml
 dependencies:
   path_provider: ^2.x
-  path_provider_tvos: ^0.0.1
+  path_provider_tvos: ^0.0.2
 ```
 
 ## tvOS support
@@ -32,3 +32,10 @@ dependencies:
 - `getExternalStorage*` → `UnsupportedError` (Android-only, same as iOS).
 
 See `PORTING_REPORT.md` for detail.
+
+## Dependency management
+
+Supports both **Swift Package Manager** and **CocoaPods** from a single
+source tree. `flutter-tvos` wires the right one automatically: apps on
+Flutter 3.44+ link it via SwiftPM (this package ships a `tvos/Package.swift`),
+while CocoaPods-based projects keep using the podspec. No manual setup needed.

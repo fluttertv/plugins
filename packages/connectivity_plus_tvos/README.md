@@ -11,7 +11,7 @@ for [flutter-tvos](https://github.com/fluttertv/flutter-tvos).
 ```yaml
 dependencies:
   connectivity_plus: ^7.x
-  connectivity_plus_tvos: ^0.0.1
+  connectivity_plus_tvos: ^0.0.2
 ```
 
 ## tvOS support
@@ -29,3 +29,10 @@ dependencies:
 - Cellular detection (not applicable).
 
 See `PORTING_REPORT.md` for the port detail and checklist.
+
+## Dependency management
+
+Supports both **Swift Package Manager** and **CocoaPods** from a single
+source tree. `flutter-tvos` wires the right one automatically: apps on
+Flutter 3.44+ link it via SwiftPM (this package ships a `tvos/Package.swift`),
+while CocoaPods-based projects keep using the podspec. No manual setup needed.

@@ -1,3 +1,9 @@
+## 0.0.2
+
+* Add Swift Package Manager support: ships a `tvos/Package.swift` so the
+  package can be consumed via SwiftPM (the Flutter 3.44 default) alongside the
+  existing CocoaPods podspec. No API or behaviour change.
+
 ## 0.0.1
 
 Initial release — **hand-written, maintained** tvOS implementation of
