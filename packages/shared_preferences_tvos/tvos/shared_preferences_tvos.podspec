@@ -6,7 +6,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'shared_preferences_tvos'
-  s.version          = '0.0.1'
+  s.version          = '0.0.2'
   s.summary          = 'tvOS implementation of shared_preferences.'
   s.description      = <<-DESC
 tvOS implementation of shared_preferences, the federated platform

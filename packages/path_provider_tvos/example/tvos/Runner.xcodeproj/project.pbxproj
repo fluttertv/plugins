@@ -16,7 +16,6 @@
 		97C1470B1CF9000082B4168D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000082B4168E /* LaunchScreen.storyboard */; };
 		97C1470F1CF9000082B4168C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000082B4168C /* Assets.xcassets */; };
 		AAA000000000000000000002 /* MetalLibInterposer.m in Sources */ = {isa = PBXBuildFile; fileRef = AAA000000000000000000001 /* MetalLibInterposer.m */; };
-		AAA000000000000000000010 /* tvos_metallibs in Resources */ = {isa = PBXBuildFile; fileRef = AAA000000000000000000004 /* tvos_metallibs */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -50,7 +49,6 @@
 		97C146FF1CF9000082B4168E /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		AAA000000000000000000001 /* MetalLibInterposer.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MetalLibInterposer.m; sourceTree = "<group>"; };
 		AAA000000000000000000003 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
-		AAA000000000000000000004 /* tvos_metallibs */ = {isa = PBXFileReference; lastKnownFileType = folder; path = tvos_metallibs; sourceTree = "<group>"; };
 		AAA000000000000000000005 /* MetalLibInterposer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MetalLibInterposer.h; sourceTree = "<group>"; };
 		BD5225722322BB9B1DD92201 /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
 		C4FC12720450E4C28811E671 /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -112,7 +110,6 @@
 				97C146FE1CF9000082B4168C /* Info.plist */,
 				97C146FF1CF9000082B4168D /* Main.storyboard */,
 				97C146FF1CF9000082B4168E /* LaunchScreen.storyboard */,
-				AAA000000000000000000004 /* tvos_metallibs */,
 			);
 			path = Runner;
 			sourceTree = "<group>";
@@ -201,7 +198,6 @@
 				97C1470F1CF9000082B4168C /* Assets.xcassets in Resources */,
 				97C1470A1CF9000082B4168D /* Main.storyboard in Resources */,
 				97C1470B1CF9000082B4168D /* LaunchScreen.storyboard in Resources */,
-				AAA000000000000000000010 /* tvos_metallibs in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
