@@ -6,7 +6,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'flutter_secure_storage_tvos'
-  s.version          = '0.0.1'
+  s.version          = '0.0.2'
   s.summary          = 'tvOS implementation of flutter_secure_storage.'
   s.description      = <<-DESC
 tvOS implementation of flutter_secure_storage, the federated platform
