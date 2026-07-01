@@ -1,0 +1,32 @@
+# Dart / Flutter
+.dart_tool/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub/
+
+# CocoaPods
+tvos/Pods/
+tvos/Podfile.lock
+tvos/.symlinks/
+tvos/Flutter/Flutter.framework
+tvos/Flutter/Flutter.podspec
+
+# Xcode / SwiftPM (per-user, generated when tvos/Package.swift is opened)
+**/.swiftpm/
+**/xcuserdata/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# macOS
+.DS_Store
+
+# Local-dev dependency override resolving firebase_core_tvos from the sibling
+# package before it is published to pub.dev. Not committed, not published;
+# remove it at release time (after firebase_core_tvos is live). See pubspec.yaml.
+pubspec_overrides.yaml
+example/pubspec_overrides.yaml
