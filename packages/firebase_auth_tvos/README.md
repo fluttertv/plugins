@@ -44,8 +44,14 @@ without a browser redirect, and throws/no-ops for the rest.
 | reCAPTCHA app verification | ❌ | Requires WebKit, absent on tvOS |
 
 Calls into the unsupported methods return an `unsupported-platform`/
-`second-factor-required` `FirebaseAuthException` or are no-ops rather than
-crashing. See `PORTING_REPORT.md` for the exact per-method behaviour.
+`second-factor-required` `FirebaseAuthException` rather than crashing. See
+`PORTING_REPORT.md` for the exact per-method behaviour.
+
+> **Verification level:** ✅ means the path is implemented and compiles for tvOS.
+> **Anonymous sign-in is the only method runtime-verified end-to-end** (live
+> round-trip on the simulator and a physical Apple TV). The other ✅ rows share
+> the same native code path but have not each been exercised against a live
+> project — verify the specific flows your app uses before shipping.
 
 ## Requirements
 

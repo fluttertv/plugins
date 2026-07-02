@@ -1,0 +1,10 @@
+# Local development override for the example app. The plugin's published
+# pubspec.yaml pins `firebase_core_tvos: ^0.0.1` (hosted), but that package
+# isn't on pub.dev yet, so force it to resolve from the sibling package in
+# this monorepo. A dependency override wins over the transitive hosted
+# constraint regardless of source, which a plain path dependency cannot do.
+# Not published (examples are not published packages anyway). Remove once
+# firebase_core_tvos 0.0.1 is on pub.dev.
+dependency_overrides:
+  firebase_core_tvos:
+    path: ../../firebase_core_tvos

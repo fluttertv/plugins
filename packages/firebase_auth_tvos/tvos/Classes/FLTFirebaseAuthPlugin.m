@@ -1995,7 +1995,13 @@ static void handleAppleAuthResult(FLTFirebaseAuthPlugin *object, AuthPigeonFireb
 #if TARGET_OS_OSX || TARGET_OS_TV
   NSLog(@"The Firebase Phone Authentication provider is not supported on this "
         @"platform.");
-  completion(nil, nil);
+  // Pigeon return type is non-nullable (`Future<String>`), so a nil reply
+  // would throw an opaque `null-error` on the Dart side. Return an explicit
+  // unsupported-platform error, matching the MFA/OAuth/reCAPTCHA stubs.
+  completion(nil, [FlutterError errorWithCode:@"unsupported-platform"
+                                      message:@"Phone number verification is not supported by "
+                                              @"the Firebase SDK on tvOS."
+                                      details:nil]);
 #else
   FIRAuth *auth = [self getFIRAuthFromAppNameFromPigeon:app];
 
@@ -2508,7 +2514,13 @@ static void handleAppleAuthResult(FLTFirebaseAuthPlugin *object, AuthPigeonFireb
   NSLog(@"Updating a users phone number via Firebase Authentication is only "
         @"supported on the iOS "
         @"platform.");
-  completion(nil, nil);
+  // Pigeon return type is non-nullable (`InternalUserDetails`), so a nil reply
+  // would throw an opaque `null-error` on the Dart side. Return an explicit
+  // unsupported-platform error instead.
+  completion(nil, [FlutterError errorWithCode:@"unsupported-platform"
+                                      message:@"Updating a phone number is not supported by the "
+                                              @"Firebase SDK on tvOS."
+                                      details:nil]);
 #endif  // TARGET_OS_IPHONE && !TARGET_OS_TV
 }
 

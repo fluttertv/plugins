@@ -45,6 +45,15 @@ registrant — no extra imports or setup in app code.
 
 Push messages are still *delivered* to a registered Apple TV; what's
 constrained is reading their payload and reacting to user interaction from Dart.
+
+> **The `onMessage`, `onMessageOpenedApp`, and `onBackgroundMessage` streams
+> never emit on tvOS, and `getInitialMessage()` always resolves to `null`** —
+> the underlying `UNNotificationContent.userInfo` and interaction callbacks are
+> unavailable on tvOS. These calls do not throw or hang (completions fire
+> normally); they simply produce no events. Don't build required app logic on
+> them for Apple TV. Token retrieval, topic subscription, and permission
+> requests work as usual.
+
 See `PORTING_REPORT.md` for the exact per-API behaviour and the open
 verification questions.
 
