@@ -1,0 +1,19 @@
+name: firebase_auth_example
+description: Demonstrates how to use the firebase_auth plugin on tvOS.
+
+environment:
+  sdk: '^3.6.0'
+  flutter: '>=3.27.0'
+
+dependencies:
+  firebase_auth: ^6.5.4
+  firebase_auth_tvos:
+    path: ../
+  firebase_core: ^4.11.0
+  firebase_core_tvos:
+    path: ../../firebase_core_tvos
+  flutter:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true

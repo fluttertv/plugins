@@ -31,6 +31,11 @@ package's `README.md` and `PORTING_REPORT.md`.
 | [`audioplayers_tvos`](packages/audioplayers_tvos) [![pub](https://img.shields.io/pub/v/audioplayers_tvos.svg)](https://pub.dev/packages/audioplayers_tvos) | [`audioplayers`](https://pub.dev/packages/audioplayers) |
 | [`flutter_tts_tvos`](packages/flutter_tts_tvos) [![pub](https://img.shields.io/pub/v/flutter_tts_tvos.svg)](https://pub.dev/packages/flutter_tts_tvos) | [`flutter_tts`](https://pub.dev/packages/flutter_tts) |
 | [`sqflite_tvos`](packages/sqflite_tvos) [![pub](https://img.shields.io/pub/v/sqflite_tvos.svg)](https://pub.dev/packages/sqflite_tvos) | [`sqflite`](https://pub.dev/packages/sqflite) |
+| [`firebase_core_tvos`](packages/firebase_core_tvos) [![pub](https://img.shields.io/pub/v/firebase_core_tvos.svg)](https://pub.dev/packages/firebase_core_tvos) | [`firebase_core`](https://pub.dev/packages/firebase_core) |
+| [`firebase_auth_tvos`](packages/firebase_auth_tvos) [![pub](https://img.shields.io/pub/v/firebase_auth_tvos.svg)](https://pub.dev/packages/firebase_auth_tvos) | [`firebase_auth`](https://pub.dev/packages/firebase_auth) |
+| [`cloud_firestore_tvos`](packages/cloud_firestore_tvos) [![pub](https://img.shields.io/pub/v/cloud_firestore_tvos.svg)](https://pub.dev/packages/cloud_firestore_tvos) | [`cloud_firestore`](https://pub.dev/packages/cloud_firestore) |
+| [`firebase_storage_tvos`](packages/firebase_storage_tvos) [![pub](https://img.shields.io/pub/v/firebase_storage_tvos.svg)](https://pub.dev/packages/firebase_storage_tvos) | [`firebase_storage`](https://pub.dev/packages/firebase_storage) |
+| [`firebase_messaging_tvos`](packages/firebase_messaging_tvos) [![pub](https://img.shields.io/pub/v/firebase_messaging_tvos.svg)](https://pub.dev/packages/firebase_messaging_tvos) | [`firebase_messaging`](https://pub.dev/packages/firebase_messaging) |
 
 ### Evaluated but not provided
 
@@ -44,7 +49,6 @@ misleading:
 | [`google_sign_in`](https://pub.dev/packages/google_sign_in) | No GoogleSignIn tvOS SDK; tvOS uses a different device-pairing flow |
 | [`geolocator`](https://pub.dev/packages/geolocator) | No location services on Apple TV |
 | [`permission_handler`](https://pub.dev/packages/permission_handler) | tvOS lacks the permission surfaces (location, camera, photos, …) |
-| [`firebase_core`](https://pub.dev/packages/firebase_core) | No tvOS slice of the Firebase Apple SDK |
 | [`in_app_purchase`](https://pub.dev/packages/in_app_purchase) | StoreKit2 port has an unresolved protocol-conformance cascade |
 | [`network_info_plus`](https://pub.dev/packages/network_info_plus) | Wi‑Fi SSID/BSSID APIs do not exist on tvOS |
 | [`webview_flutter`](https://pub.dev/packages/webview_flutter) | No WebKit on tvOS — there is no web view, in-app browser, or HTML rendering |

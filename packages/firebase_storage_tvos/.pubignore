@@ -1,0 +1,5 @@
+# Local-development dependency overrides — resolve firebase_core_tvos from the
+# sibling package before it is published. Committed so a fresh checkout builds,
+# but excluded from the published package (consumers get the hosted `^0.0.1`
+# constraint from pubspec.yaml).
+pubspec_overrides.yaml
