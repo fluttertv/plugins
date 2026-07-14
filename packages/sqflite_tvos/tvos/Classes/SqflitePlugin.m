@@ -760,10 +760,11 @@ static NSInteger _databaseOpenCount = 0;
 
 //
 // getDatabasesPath
-// returns the Documents directory on iOS
+// returns the Library/Caches directory on tvOS
+// (the tvOS sandbox only allows writes to Caches and tmp)
 //
 - (void)handleGetDatabasesPath:(FlutterMethodCall*)call result:(FlutterResult)result {
-    NSArray* paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSArray* paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
     result(paths.firstObject);
 }
 

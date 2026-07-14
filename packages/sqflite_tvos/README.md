@@ -23,10 +23,14 @@ dependencies:
   ships with tvOS.
 
 ### ⚠️ Limitations / differs from iOS
-- Put the database under a `path_provider` directory (Documents /
-  Application Support). The tvOS sandbox is constrained and OS-managed
-  caches can be purged — don't store the DB in a cache/temp dir if you
-  need durability.
+- On physical tvOS devices only `Library/Caches` and `tmp` are writable —
+  opening a database under Documents fails with `SQLITE_CANTOPEN` (the
+  simulator sandbox permits the write, masking this). The plugin's default
+  `getDatabasesPath()` resolves under `Library/Caches`, so the canonical
+  `openDatabase(join(await getDatabasesPath(), 'x.db'))` works on hardware.
+  Note tvOS storage is purgeable by platform contract: the OS may evict
+  Caches at any time, so data that must survive needs a server or iCloud
+  Key-Value Storage, not the local filesystem.
 
 ### ❌ Not supported on tvOS
 - None for core SQLite usage.
