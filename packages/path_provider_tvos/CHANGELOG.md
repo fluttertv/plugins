@@ -1,3 +1,22 @@
+## 0.0.3
+
+* **Fix:** `getApplicationSupportDirectory()` no longer returns a path that
+  does not exist. The tvOS sandbox refuses to create
+  `Library/Application Support`, and that failure was swallowed (`try?`), so
+  callers received a path and only discovered the problem at their first write.
+  It now returns `null`, which `path_provider` surfaces as
+  `MissingPlatformDirectoryException` at the call site.
+* **Docs:** corrected the claim that tvOS has "a normal app sandbox" where the
+  standard lookups work unchanged. Verified on a physical Apple TV 4K
+  (tvOS 26.5): only `Library/Caches` and `tmp` are writable — writes to
+  `Documents` are denied, and `Library/Application Support` cannot be created.
+  The tvOS simulator permits all of these, which is why this went unnoticed.
+* **Behaviour change:** apps calling `getApplicationSupportDirectory()` on tvOS
+  now get an exception instead of an unusable path. Switch to
+  `getApplicationCacheDirectory()`, and note that tvOS storage is purgeable by
+  platform contract — durable data belongs on a server or in iCloud key-value
+  storage.
+
 ## 0.0.2
 
 * Add Swift Package Manager support: ships a `tvos/Package.swift` so the
