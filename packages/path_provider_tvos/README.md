@@ -45,7 +45,8 @@ belongs on a server or in iCloud key-value storage.
 ### ⚠️ Returned, but not writable
 - `getApplicationDocumentsDirectory()` — app `Documents/`. Returned for parity
   with iOS and fine to read from, but writes fail on a real Apple TV. **Use
-  `getApplicationCacheDirectory()` instead.**
+  `getApplicationCacheDirectory()` instead.** Calling it logs a one-time
+  warning so a later write failure is traceable to the sandbox.
 - `getLibraryDirectory()` — app `Library/`. The container itself; write to
   `Library/Caches` beneath it.
 

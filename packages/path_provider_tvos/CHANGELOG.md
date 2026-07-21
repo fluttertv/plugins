@@ -11,6 +11,10 @@
   (tvOS 26.5): only `Library/Caches` and `tmp` are writable — writes to
   `Documents` are denied, and `Library/Application Support` cannot be created.
   The tvOS simulator permits all of these, which is why this went unnoticed.
+* `getApplicationDocumentsDirectory()` now logs a one-time warning on tvOS.
+  The path is still returned — Documents exists and reads work — but writes to
+  it fail on a physical Apple TV, and silently handing back a path for the most
+  common `path_provider` call made that failure hard to trace.
 * **Behaviour change:** apps calling `getApplicationSupportDirectory()` on tvOS
   now get an exception instead of an unusable path. Switch to
   `getApplicationCacheDirectory()`, and note that tvOS storage is purgeable by

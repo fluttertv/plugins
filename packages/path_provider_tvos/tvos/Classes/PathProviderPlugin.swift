@@ -44,6 +44,9 @@ public class PathProviderPlugin: NSObject, FlutterPlugin {
       result(NSTemporaryDirectory())
     case "getApplicationDocumentsDirectory":
       // Returned for parity with iOS, but NOT writable on tvOS — see above.
+      // Warn once so the write that fails later is traceable to the sandbox
+      // rather than to an errno that names nothing.
+      _ = PathProviderPlugin.warnDocumentsNotWritable
       result(directory(.documentDirectory))
     case "getApplicationSupportDirectory":
       result(ensuredDirectory(.applicationSupportDirectory))
@@ -58,6 +61,20 @@ public class PathProviderPlugin: NSObject, FlutterPlugin {
       result(FlutterMethodNotImplemented)
     }
   }
+
+  /// Emitted the first time Documents is requested. `static let` is lazily
+  /// initialised exactly once per process, so this is a thread-safe one-shot.
+  /// Documents is still returned — it exists, reads work, and some apps ship
+  /// pre-populated data there — but writes to it fail on a real Apple TV, and
+  /// silently returning a path for the most common path_provider call is what
+  /// makes that failure hard to place.
+  private static let warnDocumentsNotWritable: Void = {
+    NSLog(
+      "[path_provider_tvos] getApplicationDocumentsDirectory(): on a physical "
+        + "Apple TV, Documents is readable but NOT writable. Use "
+        + "getApplicationCacheDirectory() for files your app writes. "
+        + "(The tvOS simulator permits the write, so this only fails on device.)")
+  }()
 
   private func directory(_ type: FileManager.SearchPathDirectory) -> String? {
     return NSSearchPathForDirectoriesInDomains(type, .userDomainMask, true)
