@@ -20,6 +20,9 @@ dev_dependencies:
   flutter_lints: ^4.0.0
   flutter_test:
     sdk: flutter
+  # Used by the tests to assert the app-facing behaviour: path_provider is what
+  # turns a null from this implementation into MissingPlatformDirectoryException.
+  path_provider: ^2.1.0
 
 flutter:
   plugin:
