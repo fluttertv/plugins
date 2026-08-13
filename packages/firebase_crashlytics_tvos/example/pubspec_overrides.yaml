@@ -1,0 +1,7 @@
+# Local development override for the example app. Forces firebase_core_tvos
+# to the sibling package so the example resolves against the plugin's hosted
+# `^0.0.1` constraint before that package is published. Gitignored; examples
+# are not published. Remove once firebase_core_tvos 0.0.1 is on pub.dev.
+dependency_overrides:
+  firebase_core_tvos:
+    path: ../../firebase_core_tvos
