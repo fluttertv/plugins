@@ -77,7 +77,8 @@ class _PerformanceHomePageState extends State<PerformanceHomePage> {
                     await trace.start();
                     trace.putAttribute('source', 'apple_tv');
                     trace.incrementMetric('items', 3);
-                    await Future<void>.delayed(const Duration(milliseconds: 200));
+                    await Future<void>.delayed(
+                        const Duration(milliseconds: 200));
                     await trace.stop();
                   }),
                   child: const Text('run custom trace'),
