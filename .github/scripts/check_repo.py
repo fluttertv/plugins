@@ -146,12 +146,18 @@ def pubignore_excludes(text, relpath):
         pattern = line.rstrip("/")
         if not pattern:
             continue
-        if pattern.startswith("/"):
-            # Anchored to the package root: `/pubspec_overrides.yaml` excludes
-            # the root file and says nothing about example/'s.
-            hit = fnmatch.fnmatch(relpath, pattern.lstrip("/"))
-        elif "/" in pattern:
-            hit = fnmatch.fnmatch(relpath, pattern)
+        if pattern.startswith("/") or "/" in pattern:
+            # Anchored to the package root. Excluding a *directory* excludes its
+            # whole subtree, so match the pattern against every leading prefix
+            # of the path, not only against the path itself — `/example/` and
+            # `/example` both cover `example/pubspec_overrides.yaml`, which is
+            # what `git check-ignore` says and what pub follows. Comparing only
+            # the full path called that a miss and produced a false R4 telling
+            # the author to add an entry they had effectively already written.
+            anchored = pattern.lstrip("/")
+            parts = relpath.split("/")
+            prefixes = ["/".join(parts[:i]) for i in range(1, len(parts) + 1)]
+            hit = any(fnmatch.fnmatch(prefix, anchored) for prefix in prefixes)
         else:
             # Unanchored: matches the basename, or any directory component.
             parts = relpath.split("/")
@@ -276,9 +282,17 @@ def check(root):
             declared = podspec_version(text)
             if declared is None:
                 fail("R2", pkg, f"{spec} declares no s.version")
-            elif version and declared != version:
-                fail("R2", pkg, f"{spec} says {declared}, pubspec.yaml says {version}",
-                     f"set s.version = '{version}'")
+            else:
+                # Dart allows `0.0.1+1`; CocoaPods does not. Pod::Version derives
+                # from Gem::Version, which rejects `+` outright, so demanding the
+                # podspec repeat the build metadata would leave an author with a
+                # red gate or a podspec that raises. Compare the release part.
+                want = version.split("+")[0] if version else None
+                if want and declared != want:
+                    fail("R2", pkg, f"{spec} says {declared}, pubspec.yaml says {version}",
+                         f"set s.version = '{want}'"
+                         + (" (CocoaPods rejects Dart's `+build` suffix)"
+                            if want != version else ""))
 
         # R2 — changelog.
         changelog, err = read_text(os.path.join(d, "CHANGELOG.md"))
@@ -419,9 +433,14 @@ CASES = [
       "Pod::Spec.new do |s|\n  # s.version = '0.0.1'\n  s.version = '9.9.9'\nend\n"}, "R2"),
     ("R2 non-version changelog heading on top",
      {"CHANGELOG.md": "## Unreleased\n\n* wip\n\n## 0.0.1\n\n* Initial.\n"}, "R2"),
-    ("R2 version with build metadata is compared verbatim",
+    # `0.0.1+1` in the pubspec against `0.0.1` in the podspec is CORRECT, since
+    # CocoaPods cannot express the build metadata. This case asserts the rule
+    # stays quiet — an earlier revision asserted the opposite and would have
+    # forced a podspec version that raises.
+    ("R2 build metadata is stripped, not demanded of the podspec",
      {"pubspec.yaml": GOOD_PUBSPEC.format(name="widget_tvos").replace(
-         "version: 0.0.1", "version: 0.0.1+1")}, "R2"),
+         "version: 0.0.1", "version: 0.0.1+1"),
+      "CHANGELOG.md": "## 0.0.1+1\n\n* Initial.\n"}, None),
     # Expects BOTH rules: the point of the case is that R3 still runs when R2
     # has already failed, so asserting only R3 would let the co-firing it
     # demonstrates go unchecked.

@@ -9,6 +9,14 @@ name: CI
 # compiled, nothing runs on a simulator. Those stay a reviewer's job, and the
 # porting reports are where that evidence belongs.
 #
+# One more blind spot worth naming: `flutter pub get` honours a committed root
+# pubspec_overrides.yaml, and four packages ship one. For those, the hosted
+# constraint in pubspec.yaml — the one consumers actually resolve against — is
+# never exercised here. An unsatisfiable constraint resolves green. Closing it
+# needs a second resolve with overrides moved aside; the cheaper fix is deleting
+# the four overrides, which are obsolete now that firebase_core_tvos is
+# published.
+#
 # Worth knowing why the `repo` job exists at all: stock flutter_tools does not
 # validate the `tvos:` platform key. `_validateMultiPlatformYaml` knows only
 # android/ios/linux/macos/windows and ignores anything else, so `flutter pub
@@ -82,7 +90,11 @@ jobs:
           # `find`, not `ls -d packages/*/`: with packages/ empty or absent the
           # glob does not expand, ls exits 2, and `set -e` kills the step before
           # the guard above can explain what happened.
-          dirs=$(find packages -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')
+          # `-not -name '.*'` mirrors discover()'s filter. Without it a dotted
+          # directory under packages/ — a .template/ scaffold, a tool cache —
+          # makes the counts disagree and the step hard-fails blaming a silent
+          # drop that is not happening.
+          dirs=$(find packages -mindepth 1 -maxdepth 1 -type d -not -name '.*' | wc -l | tr -d ' ')
           # A silent drop is the failure this whole job exists to prevent, so
           # compare against the raw directory count rather than trusting the
           # filter to have kept everything.
@@ -206,7 +218,12 @@ jobs:
   # a skipped job otherwise counts as success.
   ci:
     name: ci
-    if: always()
+    # `!cancelled()` rather than `always()`: both keep the job running when an
+    # upstream one is skipped (which is the property that matters, since a
+    # skipped job otherwise counts as success), but `always()` also runs on
+    # cancellation and then asserts 'cancelled' = 'success', posting a red
+    # required check for every superseded PR run.
+    if: ${{ !cancelled() }}
     needs: [repo, package]
     runs-on: ubuntu-latest
     steps:
