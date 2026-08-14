@@ -1,0 +1,128 @@
+name: CI
+
+# What this does and does not cover.
+#
+# Stock Flutter is enough for everything here — resolution, analysis and the
+# Dart tests all work without the tvOS embedder, which is why this can run on
+# ubuntu instead of a macOS runner. What it therefore does NOT cover is the half
+# that actually needs Apple hardware: the podspecs are never resolved, the tvOS
+# sources are never compiled, and nothing is run on a simulator. Those stay a
+# reviewer's job, and the porting reports are where that evidence belongs.
+#
+# The point is the other half — the things a human is asked to remember and
+# eventually won't.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Pinned rather than "stable" so a Flutter release cannot turn a green PR red
+  # without a commit here saying so. Bump deliberately.
+  FLUTTER_VERSION: "3.44.0"
+
+jobs:
+  repo:
+    name: repo structure
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 .github/scripts/check_repo.py .
+
+  discover:
+    name: discover packages
+    runs-on: ubuntu-latest
+    outputs:
+      packages: ${{ steps.list.outputs.packages }}
+    steps:
+      - uses: actions/checkout@v4
+      # Derived from the tree, not hardcoded: a new package is covered the
+      # moment it lands, which is the case a hardcoded list always misses.
+      #
+      # Names are filtered to [A-Za-z0-9_]+ before they become matrix values.
+      # A directory name is attacker-controlled on a fork PR, and these values
+      # reach `working-directory:` — the filter keeps anything shell-shaped from
+      # ever entering the matrix, rather than relying on where it lands.
+      - id: list
+        run: |
+          packages=$(ls -d packages/*/ \
+            | sed 's|packages/||; s|/$||' \
+            | grep -E '^[A-Za-z0-9_]+$' \
+            | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          if [ "$packages" = "[]" ] || [ -z "$packages" ]; then
+            echo "ERROR: no packages matched — refusing to report a vacuous pass." >&2
+            exit 1
+          fi
+          echo "packages=$packages" >> "$GITHUB_OUTPUT"
+          echo "Found: $packages"
+
+  package:
+    name: ${{ matrix.package }}
+    needs: discover
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJSON(needs.discover.outputs.packages) }}
+    defaults:
+      run:
+        working-directory: packages/${{ matrix.package }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: flutter pub get
+        run: flutter pub get
+
+      # Scoped to the package's own Dart. Analysing the package root would also
+      # descend into example/ and into nested packages that were never resolved
+      # (audioplayers_tvos ships an example/server with its own pubspec), and
+      # report their unresolved imports as this package's errors.
+      #
+      # `dart analyze` is fatal on errors and warnings, and reports infos
+      # without failing — which is the gate we want. The examples are ported
+      # upstream code and carry lint infos that are not ours to churn.
+      # One invocation per directory rather than `dart analyze $targets`: an
+      # unquoted variable holding two paths word-splits in bash and does not in
+      # zsh, so the collapsed form silently analyses a directory named "lib test"
+      # — which does not exist, and which `dart analyze` reports as a usage
+      # error that reads nothing like the real problem.
+      - name: dart analyze (lib + test)
+        run: |
+          dart analyze lib
+          if [ -d test ]; then dart analyze test; fi
+
+      - name: flutter test
+        run: |
+          if [ -d test ] && ls test/*.dart >/dev/null 2>&1; then
+            flutter test
+          else
+            echo "no test/ — skipping"
+          fi
+
+      # The example is what a user copies, so it has to at least resolve and
+      # analyse. Errors fail; infos do not.
+      - name: example — resolve and analyse
+        run: |
+          if [ ! -f example/pubspec.yaml ]; then
+            echo "no example/ — skipping"
+            exit 0
+          fi
+          cd example
+          flutter pub get
+          if [ -d lib ]; then
+            dart analyze lib
+          fi
