@@ -25,10 +25,15 @@ permissions:
   contents: read
 
 concurrency:
-  # Per-ref, and only cancellable on pull requests: cancelling a superseded PR
-  # run is what you want, but cancelling main's runs when two merges land close
-  # together leaves main's history dotted with cancelled builds and no record of
-  # whether the tree was ever green.
+  # Per-ref, and only cancellable on pull requests: superseding a PR run is what
+  # you want, while on main a cancelled run tells you nothing about whether that
+  # commit was ever green.
+  #
+  # This does NOT guarantee one build per merge. GitHub keeps at most one
+  # *pending* run per concurrency group and cancels the previous pending one
+  # regardless of this setting, so back-to-back merges can still skip a build.
+  # Guaranteeing one per merge would need a queue, which cannot be combined with
+  # a truthy cancel-in-progress.
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
@@ -166,13 +171,19 @@ jobs:
 
       # The example is what a user copies, so it has to resolve and analyse.
       #
-      # Note these do not all get the same treatment: eight examples ship no
-      # analysis_options.yaml of their own and therefore inherit the plugin's
-      # strict-casts / strict-inference / strict-raw-types, which produce
-      # errors. That is not hypothetical — the commit adding this workflow had
-      # to fix one such error in device_info_plus_tvos's example. The eight that
-      # do carry their own options file are checked more loosely. Worth
-      # unifying, but not by silently lowering the bar here.
+      # Note these do not all get the same treatment. Examples with no
+      # analysis_options.yaml of their own inherit the plugin's strict-casts /
+      # strict-inference / strict-raw-types. Measured on Dart 3.12: strict-casts
+      # produces errors, the other two produce warnings — which `dart analyze`
+      # also treats as fatal, so all three gate. Not hypothetical: the commit
+      # adding this workflow had to fix exactly such an error in
+      # device_info_plus_tvos's example.
+      #
+      # The examples that do carry an options file are not uniformly looser, and
+      # it would be a mistake to "unify" by assuming they are: path_provider's
+      # repeats the same strict block, sqflite's repeats two thirds of it, and
+      # flutter_secure_storage's uses very_good_analysis, which is stricter than
+      # anything here. Only the plain flutter_lints ones are genuinely looser.
       - name: example — resolve and analyse
         run: |
           if [ ! -f example/pubspec.yaml ]; then

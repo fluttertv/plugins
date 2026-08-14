@@ -83,8 +83,10 @@ def tvos_plugin_class(pubspec):
 
     Parsed rather than scanned. The hand-rolled version walked out of the
     `tvos:` block into whichever platform followed it and returned *that*
-    platform's class, so a package declaring only `ios: pluginClass:` passed
-    the one rule whose failure is invisible until an app calls the plugin.
+    platform's class. The shape that slipped through was a `tvos:` block present
+    but pluginClass-less, followed by a platform that had one — a package with
+    no `tvos:` block at all was still caught. That is the case the R5 self-test
+    now pins, and the rule whose failure is invisible until an app calls it.
     """
     if not isinstance(pubspec, dict):
         return None
