@@ -41,6 +41,8 @@ Usage:
 Exits non-zero if any check fails.
 """
 
+import argparse
+import fnmatch
 import os
 import re
 import shutil
@@ -53,10 +55,16 @@ REQUIRED_FILES = ["pubspec.yaml", "README.md", "CHANGELOG.md", "LICENSE"]
 
 
 def load_yaml(path):
-    """Parsed YAML, or a (None, reason) pair. Never raises."""
+    """(parsed, error). `error` is None when the file parsed, even to nothing.
+
+    BaseLoader rather than safe_load, so every scalar stays a string. safe_load
+    types `version: 1.10` as the float 1.1, and this checker compares versions
+    as text — it would have reported "podspec says 1.10, pubspec.yaml says 1.1"
+    about a tree where all three files literally agree.
+    """
     try:
         with open(path, encoding="utf-8") as handle:
-            return yaml.safe_load(handle), None
+            return yaml.load(handle, Loader=yaml.BaseLoader), None
     except (OSError, UnicodeDecodeError, yaml.YAMLError) as exc:
         return None, str(exc).split("\n")[0]
 
@@ -102,26 +110,53 @@ def readme_table_rows(readme):
     for line in readme.split("\n"):
         if not line.lstrip().startswith("|"):
             continue
-        rows.update(re.findall(r"\(packages/([A-Za-z0-9_]+)/?\)", line))
+        # Tolerate `./packages/x`, a trailing slash, an `#anchor` and a link
+        # title — all legitimate rows that the stricter form rejected.
+        rows.update(re.findall(r"\(\.?/?packages/([A-Za-z0-9_]+)[/#)\s]", line))
     return rows
 
 
-def pubignore_excludes(text, name):
-    """True if `name` is excluded by this .pubignore.
+def pubignore_excludes(text, relpath):
+    """True if `relpath` (relative to the package root) is excluded.
 
-    Line-wise, ignoring comments and rejecting negations: a substring test
-    passes on `# pubspec_overrides.yaml` and, worse, on `!pubspec_overrides`,
-    which forces the file *in*.
+    Gitignore semantics, and the parts that matter here are the ones that are
+    easy to get wrong:
+
+    * **Last match wins.** A `!pattern` after a matching pattern re-includes the
+      file. Skipping `!` lines instead — which an earlier version did — means a
+      negation can never take effect, and `foo` followed by `!foo` reads as
+      excluded when the file actually ships.
+    * **Match the path, not the name.** `other_dir/pubspec_overrides.yaml`
+      excludes a file in `other_dir/`, and says nothing about the one in
+      `example/`. Comparing basenames accepted it anyway — the same shape of
+      sloppiness as the substring test this rule started with.
+    * A pattern with no slash matches at any depth; one with a slash is
+      anchored to the package root.
     """
+    excluded = False
     for raw in text.split("\n"):
         line = raw.strip()
         if not line or line.startswith("#"):
             continue
-        if line.startswith("!"):
+        negated = line.startswith("!")
+        if negated:
+            line = line[1:].strip()
+        pattern = line.rstrip("/")
+        if not pattern:
             continue
-        if line.rstrip("/").endswith(name):
-            return True
-    return False
+        if pattern.startswith("/"):
+            # Anchored to the package root: `/pubspec_overrides.yaml` excludes
+            # the root file and says nothing about example/'s.
+            hit = fnmatch.fnmatch(relpath, pattern.lstrip("/"))
+        elif "/" in pattern:
+            hit = fnmatch.fnmatch(relpath, pattern)
+        else:
+            # Unanchored: matches the basename, or any directory component.
+            parts = relpath.split("/")
+            hit = any(fnmatch.fnmatch(part, pattern) for part in parts)
+        if hit:
+            excluded = not negated
+    return excluded
 
 
 def newest_changelog_version(text):
@@ -131,7 +166,11 @@ def newest_changelog_version(text):
     leading digit skipped `## Unreleased` and validated the released entry
     underneath it, so a changelog whose top section had no version passed.
     """
-    match = re.search(r"^##\s+(.+?)\s*$", text, re.M)
+    # Strip fenced blocks first: a ``` example containing `## 0.0.1` above the
+    # real `## Unreleased` heading would otherwise be read as the newest entry,
+    # which is the original defect through a different door.
+    stripped = re.sub(r"^```.*?^```", "", text, flags=re.M | re.S)
+    match = re.search(r"^##\s+(.+?)\s*$", stripped, re.M)
     if not match:
         return None, None
     heading = match.group(1).strip()
@@ -190,19 +229,32 @@ def check(root):
             fail("R1", pkg, "no row in the root README's plugin table",
                  f"add a row linking packages/{pkg} under '## List of plugins'")
 
+        # Only the version comparisons and R5 need the pubspec. The podspec,
+        # changelog and override rules do not — and an earlier revision's
+        # `continue` here cancelled all of them on any parse error, reporting
+        # one problem out of five and saying nothing about the four it skipped.
+        # That is the same mistake the podspec check's comment below records
+        # having already learned once.
         pubspec_path = os.path.join(d, "pubspec.yaml")
         pubspec, err = load_yaml(pubspec_path)
-        if pubspec is None:
-            fail("R3", pkg, f"pubspec.yaml is unreadable or invalid ({err})")
-            continue  # nothing below can be judged without it
-        if not isinstance(pubspec, dict):
-            fail("R3", pkg, "pubspec.yaml is not a YAML mapping")
-            continue
+        if err is not None:
+            fail("R3", pkg, f"pubspec.yaml could not be parsed ({err})",
+                 "R2's version comparison and R5 are skipped for this package")
+            pubspec = None
+        elif pubspec is None:
+            fail("R3", pkg, "pubspec.yaml is empty",
+                 "R2's version comparison and R5 are skipped for this package")
+        elif not isinstance(pubspec, dict):
+            fail("R3", pkg, "pubspec.yaml is not a YAML mapping",
+                 "R2's version comparison and R5 are skipped for this package")
+            pubspec = None
 
-        version = pubspec.get("version")
-        version = str(version).strip() if version is not None else None
-        if not version:
-            fail("R2", pkg, "pubspec.yaml declares no version")
+        version = None
+        if isinstance(pubspec, dict):
+            raw_version = pubspec.get("version")
+            version = str(raw_version).strip() if raw_version is not None else None
+            if not version:
+                fail("R2", pkg, "pubspec.yaml declares no version")
 
         # R2 — podspec. Presence is checked whether or not the version parsed;
         # nesting it under the version check hid a missing podspec behind an
@@ -242,18 +294,38 @@ def check(root):
                 fail("R2", pkg, f"CHANGELOG.md starts at {newest}, pubspec.yaml says {version}",
                      f"add a `## {version}` entry at the top")
 
-        # R4 — a nested override must not reach the archive.
-        nested = os.path.join(d, "example", "pubspec_overrides.yaml")
-        if os.path.isfile(nested):
-            pubignore, _ = read_text(os.path.join(d, ".pubignore"))
-            if pubignore is None or not pubignore_excludes(pubignore, "pubspec_overrides.yaml"):
+        # R4 — a nested override must not reach the archive. Walked rather
+        # than stat-ing example/ alone: the override only has to be below the
+        # package root to ship, and an example restructured into a subdirectory
+        # would otherwise become invisible to this rule.
+        nested = [
+            os.path.relpath(os.path.join(where, "pubspec_overrides.yaml"), d)
+            for where, _, files in os.walk(d)
+            if "pubspec_overrides.yaml" in files and os.path.abspath(where) != os.path.abspath(d)
+        ]
+        if nested:
+            pubignore_path = os.path.join(d, ".pubignore")
+            pubignore, pubignore_err = read_text(pubignore_path)
+            if pubignore is not None:
+                covered = all(pubignore_excludes(pubignore, rel) for rel in nested)
+            else:
+                covered = False
+                if os.path.exists(pubignore_path):
+                    # Blaming the override would send the reader to the wrong
+                    # file; the override is fine, the .pubignore is unreadable.
+                    fail("R3", pkg, f".pubignore is unreadable ({pubignore_err})")
+            if not covered:
                 fail("R4", pkg,
-                     "example/pubspec_overrides.yaml is committed but not excluded by .pubignore",
+                     f"{', '.join(sorted(nested))} is committed but not excluded by .pubignore",
                      "add `pubspec_overrides.yaml` to .pubignore, or delete the "
                      "override if the dependency it pins is now published")
 
-        # R5 — the tvOS plugin class.
-        if not tvos_plugin_class(pubspec):
+        # R5 — the tvOS plugin class. Skipped (loudly, above) when the pubspec
+        # did not parse; a missing class cannot be distinguished from a missing
+        # file, and guessing either way would be a verdict we cannot support.
+        if pubspec is None:
+            pass
+        elif not tvos_plugin_class(pubspec):
             fail("R5", pkg,
                  "declares no flutter.plugin.platforms.tvos.pluginClass",
                  "without it the CLI never registers the plugin — "
@@ -348,12 +420,28 @@ CASES = [
     ("R2 version with build metadata is compared verbatim",
      {"pubspec.yaml": GOOD_PUBSPEC.format(name="widget_tvos").replace(
          "version: 0.0.1", "version: 0.0.1+1")}, "R2"),
+    # Expects BOTH rules: the point of the case is that R3 still runs when R2
+    # has already failed, so asserting only R3 would let the co-firing it
+    # demonstrates go unchecked.
     ("R3 missing podspec is reported even without a version",
      {"pubspec.yaml": "name: widget_tvos\nflutter:\n  plugin:\n    platforms:\n"
                       "      tvos:\n        pluginClass: GoodPlugin\n",
-      "tvos/widget_tvos.podspec": None}, "R3"),
+      "tvos/widget_tvos.podspec": None}, ["R2", "R3"]),
     ("R3 unparseable pubspec fails rather than vanishing",
      {"pubspec.yaml": "name: [unclosed\n"}, "R3"),
+    ("R3 each required file is enforced — LICENSE", {"LICENSE": None}, "R3"),
+    ("R3 each required file is enforced — CHANGELOG", {"CHANGELOG.md": None}, "R3"),
+    ("R3 each required file is enforced — README", {"README.md": None}, "R3"),
+    ("R2 podspec without an s.version at all",
+     {"tvos/widget_tvos.podspec": "Pod::Spec.new do |s|\n  s.name = 'x'\nend\n"}, "R2"),
+    ("R2 changelog with no ## heading", {"CHANGELOG.md": "Nothing yet.\n"}, "R2"),
+    ("R2 changelog heading inside a fence is not the newest",
+     {"CHANGELOG.md": "```\n## 0.0.1\n```\n\n## Unreleased\n\n* wip\n"}, "R2"),
+    ("R5 no flutter block at all",
+     {"pubspec.yaml": "name: widget_tvos\nversion: 0.0.1\n"}, "R5"),
+    ("R5 platforms without a tvos key",
+     {"pubspec.yaml": "name: widget_tvos\nversion: 0.0.1\nflutter:\n  plugin:\n"
+                      "    platforms:\n      ios:\n        pluginClass: RealIosPlugin\n"}, "R5"),
     ("R5 sibling platform's pluginClass does not satisfy tvos",
      {"pubspec.yaml": "name: widget_tvos\nversion: 0.0.1\nflutter:\n  plugin:\n"
                       "    platforms:\n      tvos:\n        sharedDarwinSource: true\n"
@@ -363,23 +451,30 @@ CASES = [
 
 def selftest():
     failures = 0
+    exercised = set()
     for label, overrides, expect in CASES:
         root = tempfile.mkdtemp(prefix="check_repo_selftest.")
         try:
-            podspec_removed = overrides.get("tvos/widget_tvos.podspec", "keep") is None
-            _fixture(root, **{k: v for k, v in overrides.items() if v is not None})
-            if podspec_removed:
-                os.remove(os.path.join(root, "packages", "widget_tvos", "tvos",
-                                       "widget_tvos.podspec"))
+            # `None` means "this file should not exist" — handled inside
+            # _fixture for every path. Filtering it out here instead left that
+            # branch dead and the deletion hardcoded to one filename, so a new
+            # case like {"LICENSE": None} silently built a *good* tree.
+            _fixture(root, **dict(overrides))
             found, _ = check(root)
-            rules = {rule for rule, _, _, _ in found}
+            rules = sorted({rule for rule, _, _, _ in found})
+            exercised.update(rules)
             if expect is None:
                 ok = not found
                 detail = "expected a clean run, got: " + "; ".join(
                     f"{r} {m}" for r, _, m, _ in found)
             else:
-                ok = expect in rules
-                detail = f"expected {expect}, got {sorted(rules) or 'nothing'}"
+                # Exact set, not membership. `expect in rules` passed when the
+                # expected rule fired from a *different* branch than the case
+                # was written for — deleting R2's "heading is not a version"
+                # arm still produced an R2, from the version-mismatch arm, and
+                # the case stayed green over a dead branch.
+                ok = rules == sorted(set(expect if isinstance(expect, list) else [expect]))
+                detail = f"expected exactly {expect}, got {rules or 'nothing'}"
             print(f"  {'ok  ' if ok else 'FAIL'}  {label}")
             if not ok:
                 print(f"        {detail}")
@@ -391,6 +486,14 @@ def selftest():
     # still ships. Built directly, since they need an example/ subtree.
     for label, pubignore, expect_fail in [
         ("R4 real entry passes", "pubspec_overrides.yaml\n", False),
+        ("R4 root-anchored entry does not cover example/",
+         "/pubspec_overrides.yaml\n", True),
+        ("R4 a different filename does not count",
+         "my_pubspec_overrides.yaml\n", True),
+        ("R4 an entry scoped to another directory does not count",
+         "other_dir/pubspec_overrides.yaml\n", True),
+        ("R4 negation after a match re-includes the file",
+         "pubspec_overrides.yaml\n!example/pubspec_overrides.yaml\n", True),
         ("R4 comment does not count", "# pubspec_overrides.yaml\n", True),
         ("R4 negation does not count", "!pubspec_overrides.yaml\n", True),
         ("R4 missing .pubignore", None, True),
@@ -404,6 +507,7 @@ def selftest():
                 with open(os.path.join(d, ".pubignore"), "w", encoding="utf-8") as handle:
                     handle.write(pubignore)
             found, _ = check(root)
+            exercised.update(rule for rule, _, _, _ in found)
             fired = "R4" in {rule for rule, _, _, _ in found}
             ok = fired == expect_fail
             print(f"  {'ok  ' if ok else 'FAIL'}  {label}")
@@ -413,21 +517,76 @@ def selftest():
         finally:
             shutil.rmtree(root, ignore_errors=True)
 
+    # R0 — the guards against a vacuous run. Built directly: both need a tree
+    # with no valid package in it, which _fixture exists to prevent.
+    for label, build, expect_rule in [
+        ("R0 empty packages/ is not a silent pass",
+         lambda root: os.makedirs(os.path.join(root, "packages")), "R0"),
+        # Pins the regression `discover`'s docstring records: enumerating by
+        # "directories containing a pubspec" made such a directory VANISH from
+        # the run instead of failing it, and silently disagreed with the
+        # workflow's matrix. Nothing caught that until it was found by hand.
+        ("R3 a package directory with no pubspec is reported, not skipped",
+         lambda root: (_fixture(root),
+                       os.makedirs(os.path.join(root, "packages", "stray_tvos"))), "R3"),
+        ("R0 unreadable root README is fatal, not skipped",
+         lambda root: (_fixture(root), os.remove(os.path.join(root, "README.md"))), "R0"),
+    ]:
+        root = tempfile.mkdtemp(prefix="check_repo_selftest.")
+        try:
+            build(root)
+            found, _ = check(root)
+            rules = {rule for rule, _, _, _ in found}
+            exercised.update(rules)
+            ok = expect_rule in rules
+            print(f"  {'ok  ' if ok else 'FAIL'}  {label}")
+            if not ok:
+                print(f"        expected {expect_rule}, got {sorted(rules) or 'nothing'}")
+                failures += 1
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+    # The self-test is what certifies every rule, so it must not be able to
+    # certify nothing. Emptying CASES made an earlier revision print "passed"
+    # and exit 0 with zero assertions — the exact anti-pattern this file exists
+    # to catch, one level up. Assert coverage of the rule set explicitly.
+    expected_rules = {"R0", "R1", "R2", "R3", "R4", "R5"}
+    missing = expected_rules - exercised
+    if missing:
+        print(f"  FAIL  no case exercises {', '.join(sorted(missing))}")
+        print("        A rule with no case is indistinguishable from a broken one.")
+        failures += 1
+
     print()
     if failures:
-        print(f"{failures} self-test case(s) failed — the gate itself is broken.")
+        print(f"{failures} self-test problem(s) — the gate itself is not trustworthy.")
         return 1
-    print("Self-test passed: every rule fires on a bad tree and stays quiet on a good one.")
+    print(f"Self-test passed: {len(CASES) + 11} cases, every rule in "
+          f"{', '.join(sorted(expected_rules))} both fires and stays quiet.")
     return 0
 
 
 def main():
-    args = sys.argv[1:]
-    if "--selftest" in args:
+    # argparse rather than scanning sys.argv: the hand-rolled version accepted
+    # `check_repo.py <root> --selftest`, ran the self-test, ignored the root and
+    # exited 0 — so collapsing the two CI steps into one command would have made
+    # the structural gate permanently green. It also silently accepted `--slftest`
+    # as "no flags at all".
+    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    parser.add_argument("root", nargs="?", default=".", help="repository root")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--list", action="store_true",
+                      help="print package names, one per line")
+    mode.add_argument("--selftest", action="store_true",
+                      help="verify every rule fires, and does not")
+    opts = parser.parse_args()
+
+    if opts.selftest:
+        if opts.root != ".":
+            parser.error("--selftest takes no root; it builds its own trees")
         return selftest()
-    positional = [a for a in args if not a.startswith("--")]
-    root = os.path.abspath(positional[0] if positional else ".")
-    if "--list" in args:
+    root = os.path.abspath(opts.root)
+    if opts.list:
         for pkg in discover(os.path.join(root, "packages")):
             print(pkg)
         return 0

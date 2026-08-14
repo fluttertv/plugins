@@ -70,11 +70,14 @@ jobs:
           set -euo pipefail
           names=$(python3 .github/scripts/check_repo.py --list .)
           count=$(printf '%s\n' "$names" | grep -c . || true)
-          dirs=$(ls -d packages/*/ | wc -l | tr -d ' ')
           if [ "$count" -eq 0 ]; then
             echo "::error::No packages discovered — refusing to report a vacuous pass."
             exit 1
           fi
+          # `find`, not `ls -d packages/*/`: with packages/ empty or absent the
+          # glob does not expand, ls exits 2, and `set -e` kills the step before
+          # the guard above can explain what happened.
+          dirs=$(find packages -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')
           # A silent drop is the failure this whole job exists to prevent, so
           # compare against the raw directory count rather than trusting the
           # filter to have kept everything.
@@ -84,7 +87,18 @@ jobs:
             printf '%s\n' "$names"
             exit 1
           fi
-          echo "packages=$(printf '%s\n' "$names" | jq -R -s -c 'split("\n") | map(select(length > 0))')" >> "$GITHUB_OUTPUT"
+          # Assigned on its own line rather than inline in the echo: a failing
+          # jq inside a command substitution used as an argument is invisible to
+          # both `set -e` and pipefail, because `echo` itself succeeds. The step
+          # would go green having written an empty `packages` output, and the
+          # run would die later on "Unexpected end of JSON input" pointing at
+          # the wrong job.
+          pkgs=$(printf '%s\n' "$names" | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          case "$pkgs" in
+            \[*\]) ;;
+            *) echo "::error::Package list is not a JSON array: '$pkgs'"; exit 1 ;;
+          esac
+          echo "packages=$pkgs" >> "$GITHUB_OUTPUT"
           echo "Discovered $count package(s)."
 
   package:
@@ -127,7 +141,11 @@ jobs:
       - name: dart analyze (lib + test)
         run: |
           dart analyze lib
-          if [ -d test ]; then dart analyze test; fi
+          if [ -d test ]; then
+            dart analyze test
+          else
+            echo "::warning::no test/ directory to analyse"
+          fi
 
       # `flutter test` discovers test/**/*_test.dart recursively. An earlier
       # version gated this on `ls test/*.dart`, which only sees the top level:
