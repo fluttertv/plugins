@@ -14,8 +14,7 @@ dependencies:
   firebase_performance: 0.11.4+3
   firebase_performance_tvos:
     path: ../
-  firebase_core_tvos:
-    path: ../../firebase_core_tvos
+  firebase_core_tvos: ^0.0.1
   flutter:
     sdk: flutter
 
