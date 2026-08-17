@@ -21,9 +21,7 @@ dependencies:
   # firebase_core_tvos — plugin discovery (tvos_plugins.dart) only adds a
   # package's native pod to the generated Podfile if it's reachable here,
   # which the podspec's `s.dependency 'firebase_core_tvos'` then resolves
-  # against locally instead of failing over to upstream's iOS-only firebase_core
-  # pod. Hosted constraint for pub.dev (path deps can't be published); local
-  # development resolves it via pubspec_overrides.yaml until it's published.
+  # instead of failing over to upstream's iOS-only firebase_core pod.
   firebase_core_tvos: ^0.0.1
 
 dev_dependencies:

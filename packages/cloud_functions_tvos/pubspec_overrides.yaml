@@ -1,6 +1,0 @@
-# Local development only — resolves the unpublished firebase_core_tvos from the
-# sibling package in this monorepo. Excluded from the published archive via
-# .pubignore so consumers get the hosted `^0.0.1` instead.
-dependency_overrides:
-  firebase_core_tvos:
-    path: ../firebase_core_tvos

@@ -15,8 +15,7 @@ dependencies:
   cloud_functions_tvos:
     path: ../
   firebase_core: 4.11.0
-  firebase_core_tvos:
-    path: ../../firebase_core_tvos
+  firebase_core_tvos: ^0.0.1
   flutter:
     sdk: flutter
 
