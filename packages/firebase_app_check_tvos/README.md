@@ -41,7 +41,7 @@ await FirebaseAppCheck.instance.activate(
 | **DeviceCheck** (`AppleDeviceCheckProvider`) | ✅ (tvOS 15+) |
 | **App Attest** (`AppleAppAttestProvider`, …WithDeviceCheckFallback) | ✅ (tvOS 15+) |
 | **Debug** (`AppleDebugProvider`) | ✅ (use on the simulator) |
-| **reCAPTCHA** (`AppleReCaptchaProvider`) | ❌ **not available** — `RecaptchaProvider` is iOS-only in the Firebase Apple SDK; not an Apple-TV provider. Requesting it on tvOS leaves the provider unconfigured and `getToken` surfaces an explicit error. |
+| **reCAPTCHA** (`AppleReCaptchaProvider`) | ❌ **not available** — `RecaptchaProvider` is iOS-only in the Firebase Apple SDK; not an Apple-TV provider. Use a DeviceCheck / App Attest provider on tvOS; if reCAPTCHA is requested, the tvOS build falls back to the default DeviceCheck provider rather than reCAPTCHA. |
 
 DeviceCheck / App Attest attestation runs on **real Apple TV hardware** (not the
 simulator — use the Debug provider there).

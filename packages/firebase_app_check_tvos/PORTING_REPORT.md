@@ -72,3 +72,16 @@ defect), confirming the native provider → Dart → backend path works on tvOS.
 `Platform.operatingSystem == "tvos"` / `Platform.isIOS == true`. DeviceCheck /
 App Attest attestation runs only on real hardware — physical Apple TV pass
 pending.
+
+**Known issue — error codes are off by one (verbatim upstream, left unchanged).**
+`createFlutterError` in `FirebaseAppCheckPlugin.swift` maps `case 0 →
+ServerUnreachable, 1 → InvalidConfiguration, 2 → Keychain, 3 → Unsupported`, but
+`FIRAppCheckErrors.h` (12.15.0) declares `Unknown = 0, ServerUnreachable = 1,
+InvalidConfiguration = 2, Keychain = 3, Unsupported = 4` — every case is shifted
+by one. On tvOS this bites hardest: `Unsupported` ("App Attest not available on
+this device", the likely error on older Apple TV hardware) is code 4, misses the
+switch, and reaches Dart as `unknown`; a Keychain failure surfaces as
+`code-unsupported`. This is copied verbatim from upstream `firebase_app_check`,
+so it is **intentionally left as-is** to keep future rebases cheap — but anyone
+doing the physical-hardware pass should expect an `unknown` where `unsupported`
+is meant.

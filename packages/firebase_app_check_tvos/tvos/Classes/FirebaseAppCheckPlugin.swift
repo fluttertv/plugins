@@ -328,7 +328,7 @@ class AppCheckProviderWrapper: NSObject, AppCheckProvider {
         delegateProvider = AppCheckDebugProvider(app: app)
       }
     case "appAttestWithDeviceCheckFallback":
-      if #available(iOS 14.0, tvOS 14.0, macOS 14.0, *) {
+      if #available(iOS 14.0, tvOS 15.0, macOS 14.0, *) {
         delegateProvider = AppAttestProvider(app: app)
       } else {
         delegateProvider = DeviceCheckProvider(app: app)
