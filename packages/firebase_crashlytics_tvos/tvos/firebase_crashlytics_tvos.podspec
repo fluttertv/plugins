@@ -49,4 +49,8 @@ package that ships native code targeting Apple tvOS.
   s.dependency 'Firebase/Crashlytics', '~> 12.15.0'
   s.dependency 'firebase_core_tvos'
   s.static_framework = true
+
+  # Produce dSYMs so native crash frames can be symbolicated (upstream sets this
+  # too). Upload-symbols isn't auto-injected here — see README "Symbolication".
+  s.user_target_xcconfig = { 'DEBUG_INFORMATION_FORMAT' => 'dwarf-with-dsym' }
 end

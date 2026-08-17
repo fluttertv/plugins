@@ -117,5 +117,13 @@ simulator and a **physical Apple TV 4K (tvOS 26.2, release/AOT)**.
 fetches settings from `…/platforms/tvos/gmp/<app-id>/settings`, and a forced
 `FirebaseCrashlytics.instance.crash()` was **captured and reported to the
 Crashlytics console** on both (uploaded to `crashlyticsreports-pa.googleapis.com`;
-appeared as a crash issue). dSYM symbol upload for symbolicated device stacks is
-the usual app-side build config (same as iOS).
+appeared as a crash issue).
+
+**Symbolication.** Upstream auto-injects the upload-symbols build phase; its
+script needs a `.symlinks` path the flutter-tvos layout lacks, so it was dropped, native device frames need `${PODS_ROOT}/FirebaseCrashlytics/run` wired by hand
+(see README). The podspec keeps upstream's `dwarf-with-dsym` so dSYMs are still
+produced.
+
+**Crash-capture limits.** Per `FIRCLSFeatures.h`, tvOS captures ordinary crashes
+(signal + `NSException` handlers) but has no alternate signal stack
+(stack-overflow may be missed) and no Mach exception server.

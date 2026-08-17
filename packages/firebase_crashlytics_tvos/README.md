@@ -32,9 +32,20 @@ dependencies:
 | Apple TV (`appletvos`)                  | yes         | ✅ **runtime-verified on a physical Apple TV 4K (release/AOT)** — a forced `crash()` was captured and reported to the Crashlytics console |
 | Apple TV simulator (`appletvsimulator`) | yes         | ✅ runtime-verified — crash reported to the console |
 
-All `firebase_crashlytics` APIs are available (no tvOS feature disables).
-Crashes upload on the **next app launch** (not real-time) — force a crash,
-relaunch, then check the Crashlytics console.
+All `firebase_crashlytics` Dart APIs work on tvOS. Ordinary crashes are captured
+(signal + `NSException` handlers), but tvOS has no alternate signal stack, so
+stack-overflow crashes may be missed, and the Mach exception server is off.
+Crashes upload on the **next app launch** — force a crash, relaunch, then check
+the console.
+
+## Symbolication (dSYM)
+
+Native crash frames need dSYM upload on every Apple platform. iOS wires this
+automatically; this tvOS port doesn't (the auto step needs a `.symlinks` path the
+flutter-tvos layout lacks). dSYMs are still produced (the podspec sets
+`dwarf-with-dsym`) — just add a Run Script phase to your app's Runner target that
+runs `"${PODS_ROOT}/FirebaseCrashlytics/run"`. Dart `recordError` reports are
+already symbolicated.
 
 ## License
 
