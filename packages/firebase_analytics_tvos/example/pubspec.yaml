@@ -16,8 +16,7 @@ dependencies:
   firebase_analytics: 12.4.3
   firebase_analytics_tvos:
     path: ../
-  firebase_core_tvos:
-    path: ../../firebase_core_tvos
+  firebase_core_tvos: ^0.0.1
   flutter:
     sdk: flutter
 
