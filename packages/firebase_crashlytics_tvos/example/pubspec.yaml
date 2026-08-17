@@ -14,8 +14,7 @@ dependencies:
   firebase_crashlytics: 5.2.4
   firebase_crashlytics_tvos:
     path: ../
-  firebase_core_tvos:
-    path: ../../firebase_core_tvos
+  firebase_core_tvos: ^0.0.1
   flutter:
     sdk: flutter
 
