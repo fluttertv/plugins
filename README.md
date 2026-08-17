@@ -36,6 +36,7 @@ package's `README.md` and `PORTING_REPORT.md`.
 | [`cloud_firestore_tvos`](packages/cloud_firestore_tvos) [![pub](https://img.shields.io/pub/v/cloud_firestore_tvos.svg)](https://pub.dev/packages/cloud_firestore_tvos) | [`cloud_firestore`](https://pub.dev/packages/cloud_firestore) |
 | [`firebase_storage_tvos`](packages/firebase_storage_tvos) [![pub](https://img.shields.io/pub/v/firebase_storage_tvos.svg)](https://pub.dev/packages/firebase_storage_tvos) | [`firebase_storage`](https://pub.dev/packages/firebase_storage) |
 | [`firebase_messaging_tvos`](packages/firebase_messaging_tvos) [![pub](https://img.shields.io/pub/v/firebase_messaging_tvos.svg)](https://pub.dev/packages/firebase_messaging_tvos) | [`firebase_messaging`](https://pub.dev/packages/firebase_messaging) |
+| [`firebase_app_check_tvos`](packages/firebase_app_check_tvos) [![pub](https://img.shields.io/pub/v/firebase_app_check_tvos.svg)](https://pub.dev/packages/firebase_app_check_tvos) | [`firebase_app_check`](https://pub.dev/packages/firebase_app_check) |
 
 ### Evaluated but not provided
 
