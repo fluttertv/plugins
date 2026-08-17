@@ -7,24 +7,24 @@ Output: `./firebase_app_check_tvos`
 
 ## Summary
 
-| Status                          | Count                          |
-| ------------------------------- | ------------------------------ |
-| Methods ported as-is            | full API                       |
-| Providers disabled on tvOS      | 1 (reCAPTCHA — iOS-only SDK)   |
-| tvOS build outlook              | ✅ compiles                    |
-| Manual review items             | 1 (handled — see addendum)     |
+| Status                     | Count                        |
+| -------------------------- | ---------------------------- |
+| Methods ported as-is       | full API                     |
+| Providers disabled on tvOS | 1 (reCAPTCHA — iOS-only SDK) |
+| tvOS build outlook         | ✅ compiles                  |
+| Manual review items        | 1 (handled — see addendum)   |
 
 ## Providers
 
 App Check dispatches through Pigeon (`FirebaseAppCheckHostApi`). The provider
 factory (`AppCheckProviderWrapper.configure`) selects the native provider:
 
-| Provider | tvOS | Notes |
-| --- | --- | --- |
-| DeviceCheck | ✅ | `DeviceCheckProvider` — the default Apple provider on tvOS 15+ |
-| App Attest (+ DeviceCheck fallback) | ✅ | `AppAttestProvider`, guarded `#available(tvOS 15.0)` |
-| Debug | ✅ | `AppCheckDebugProvider` — for the simulator |
-| reCAPTCHA | ❌ | `RecaptchaProvider` is **unavailable in the tvOS Firebase SDK** — see addendum |
+| Provider                            | tvOS | Notes                                                                          |
+| ----------------------------------- | ---- | ------------------------------------------------------------------------------ |
+| DeviceCheck                         | ✅   | `DeviceCheckProvider` — the default Apple provider on tvOS 15+                 |
+| App Attest (+ DeviceCheck fallback) | ✅   | `AppAttestProvider`, guarded `#available(tvOS 15.0)`                           |
+| Debug                               | ✅   | `AppCheckDebugProvider` — for the simulator                                    |
+| reCAPTCHA                           | ❌   | `RecaptchaProvider` is **unavailable in the tvOS Firebase SDK** — see addendum |
 
 ## Manual review items
 
@@ -45,13 +45,13 @@ Applied by hand:
   Flutter-CocoaPod dependency (Flutter via `FRAMEWORK_SEARCH_PATHS`). DeviceCheck
   is weak-linked transitively by `Firebase/AppCheck`.
 - **`FirebaseAppCheckPlugin.swift`:** `#if canImport(firebase_core) … #else
-  firebase_core_shared` repointed to a plain `import firebase_core_tvos`.
+firebase_core_shared` repointed to a plain `import firebase_core_tvos`.
 - **reCAPTCHA triage (the one real tvOS-incompatible API):** `RecaptchaProvider`
   is unavailable in the tvOS Firebase SDK, so the `case "recaptcha":` branch was
-  changed from `#if (os(iOS) || os(tvOS))` to `#if os(iOS)`. The `case` is
-  **kept** (so Pigeon dispatch stays intact); on tvOS the provider is left
-  unconfigured so `getToken` surfaces an explicit error rather than failing
-  silently. tvOS callers should use DeviceCheck / App Attest.
+  narrowed from `#if (os(iOS) || os(tvOS))` to `#if os(iOS)`. The `case` is
+  **kept** (so Pigeon dispatch stays intact); on tvOS, requesting reCAPTCHA falls
+  back to the default DeviceCheck provider. tvOS callers should use DeviceCheck /
+  App Attest.
 - **Deleted the generated `tvos/Package.swift`** (route via the podspec).
 - **`lib/firebase_app_check_tvos.dart`:** one-line re-export of
   `package:firebase_app_check/firebase_app_check.dart`. Copied Dart (`lib/src/`)
@@ -73,15 +73,8 @@ defect), confirming the native provider → Dart → backend path works on tvOS.
 App Attest attestation runs only on real hardware — physical Apple TV pass
 pending.
 
-**Known issue — error codes are off by one (verbatim upstream, left unchanged).**
-`createFlutterError` in `FirebaseAppCheckPlugin.swift` maps `case 0 →
-ServerUnreachable, 1 → InvalidConfiguration, 2 → Keychain, 3 → Unsupported`, but
-`FIRAppCheckErrors.h` (12.15.0) declares `Unknown = 0, ServerUnreachable = 1,
-InvalidConfiguration = 2, Keychain = 3, Unsupported = 4` — every case is shifted
-by one. On tvOS this bites hardest: `Unsupported` ("App Attest not available on
-this device", the likely error on older Apple TV hardware) is code 4, misses the
-switch, and reaches Dart as `unknown`; a Keychain failure surfaces as
-`code-unsupported`. This is copied verbatim from upstream `firebase_app_check`,
-so it is **intentionally left as-is** to keep future rebases cheap — but anyone
-doing the physical-hardware pass should expect an `unknown` where `unsupported`
-is meant.
+**Known issue — error codes off by one (verbatim upstream, left unchanged).**
+`createFlutterError` maps codes shifted by one vs `FIRAppCheckErrors.h` (12.15.0:
+`Unknown=0 … Unsupported=4`), so on tvOS `Unsupported` (App Attest missing on
+older hardware) reaches Dart as `unknown`. Left verbatim to keep rebases cheap —
+the physical-hardware pass should expect `unknown` where `unsupported` is meant.
