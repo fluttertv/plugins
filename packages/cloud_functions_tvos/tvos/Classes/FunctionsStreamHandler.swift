@@ -121,7 +121,7 @@ class FunctionsStreamHandler: NSObject, FlutterStreamHandler {
         events(
           FlutterError(
             code: "unknown",
-            message: "Streaming requires iOS 15+ or macOS 12+",
+            message: "Streaming requires iOS 15+, tvOS 15+, or macOS 12+",
             details: nil
           )
         )

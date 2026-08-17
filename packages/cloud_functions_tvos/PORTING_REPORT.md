@@ -9,13 +9,13 @@ Output: `./cloud_functions_tvos`
 
 ## Summary
 
-| Status | Count |
-|---|---|
-| Methods ported as-is | 0 |
-| Methods stubbed (iOS-only) | 0 |
-| Native regions disabled on tvOS | 0 |
-| tvOS build outlook | ✅ expected to compile |
-| Manual review items | 0 |
+| Status                          | Count                  |
+| ------------------------------- | ---------------------- |
+| Methods ported as-is            | 0                      |
+| Methods stubbed (iOS-only)      | 0                      |
+| Native regions disabled on tvOS | 0                      |
+| tvOS build outlook              | ✅ expected to compile |
+| Manual review items             | 0                      |
 
 ## Methods
 
@@ -39,12 +39,34 @@ None flagged automatically. You should still skim `tvos/Classes/` — regex-base
 
 ## Checklist
 
-- [ ] Read every `✗ stubbed` method above and confirm returning `FlutterMethodNotImplemented` is acceptable on tvOS.
-- [ ] Review every `⚠️ partial` method against a real Apple TV (behaviour differs from iOS).
-- [ ] Confirm the removed imports were not load-bearing for still-supported code paths.
-- [ ] `flutter-tvos build tvos --simulator --debug` from the plugin's example app compiles the generated registrant.
-- [ ] Bump the version and update `CHANGELOG.md` before publishing.
+- [x] Stubbed methods — **N/A**: none. Full API on tvOS.
+- [x] Partial methods — **N/A**: none.
+- [x] Removed imports — **N/A**: none removed.
+- [x] `flutter-tvos build tvos --simulator` compiles the generated registrant — **verified** (arm64).
+- [x] Version set (`0.0.1`) and `CHANGELOG.md` updated.
 
 ---
 
-Manual review required. Read this report top-to-bottom before publishing `cloud_functions_tvos`.
+Manual review complete — see the addendum below.
+
+## Addendum: manual fixes + verification
+
+Applied by hand (the usual mechanical delta): `firebase_core` import repointed to
+`firebase_core_tvos`; the messenger gate and `CloudFunctionsMessages.g.swift`
+import widened with `os(tvOS)`; the streaming `#available` in
+`FunctionsStreamHandler.swift` widened to `iOS 15.0, tvOS 15.0, macOS 12.0`
+(the streaming API is annotated `tvOS 15.0`, matching the pod floor). Podspec
+depends on `Firebase/Functions '~> 12.15.0'` + `firebase_core_tvos`, tvOS 15.0,
+`static_framework`, no Flutter CocoaPod. Generated `tvos/Package.swift` removed;
+`lib/` is a one-line re-export. `CodecUtility.swift` / `Constants.swift` are
+byte-identical to upstream.
+
+**Version alignment:** matches `cloud_functions 6.3.3` on the
+`firebase_core_platform_interface` **7.1.0** train (`firebase_core 4.11.x`) — the
+same train as `firebase_core_tvos`.
+
+**Verified (runtime):** on **both** the tvOS simulator (26.2, Apple TV 4K) and a
+**physical Apple TV 4K (tvOS 26.6, release/AOT)** against a live Firebase project
+— a callable function round-tripped through the Pigeon channel and returned its
+result on-device. Full API, no feature disables.
+`Platform.operatingSystem == "tvos"` / `Platform.isIOS == true`.
