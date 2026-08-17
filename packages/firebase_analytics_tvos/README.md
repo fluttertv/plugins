@@ -32,8 +32,13 @@ dependencies:
 | Apple TV (`appletvos`)                  | yes         | ✅ physical Apple TV 4K, tvOS 26.2 — Firebase inits, events reach the backend |
 | Apple TV simulator (`appletvsimulator`) | yes         | ✅ builds + runs                                                              |
 
-All `firebase_analytics` APIs are available (no tvOS feature disables). Events
-appear in Firebase **DebugView** when the app is launched with `-FIRDebugEnabled`.
+All `firebase_analytics` APIs work on tvOS **except**
+`initiateOnDeviceConversionMeasurement`, which is iOS-only
+(`API_UNAVAILABLE(tvos)`; its backing `GoogleAdsOnDeviceConversion` SDK is
+iOS-only). The handler is kept verbatim from upstream, so on tvOS that call is a
+**no-op** — it returns without error but sends no conversion data; don't build an
+on-device-conversion flow against it on tvOS. Events appear in Firebase
+**DebugView** when the app is launched with `-FIRDebugEnabled`.
 
 ## License
 

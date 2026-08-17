@@ -40,7 +40,7 @@ None flagged automatically. You should still skim `tvos/Classes/` — regex-base
 ## Checklist
 
 - [x] Stubbed methods — **N/A**: no methods were stubbed (analytics has no tvOS-incompatible APIs).
-- [x] Partial methods — **N/A**: none. Full API is available on tvOS.
+- [x] Partial methods — **1**: `initiateOnDeviceConversionMeasurement` is iOS-only (`API_UNAVAILABLE(tvos)`; backing `GoogleAdsOnDeviceConversion` SDK is iOS-only). The handler is verbatim upstream — it returns success on tvOS but is a **no-op** (no conversion data sent). The other 11 Pigeon methods work fully; left unchanged to keep the port faithful.
 - [x] Removed imports — **N/A**: none removed.
 - [x] `flutter-tvos build tvos` compiles the generated registrant — **verified** (simulator + physical Apple TV 4K, tvOS 26.2).
 - [x] Version set (`0.0.1`) and `CHANGELOG.md` updated.
