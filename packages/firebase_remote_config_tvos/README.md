@@ -36,6 +36,11 @@ All `firebase_remote_config` APIs are available (no tvOS feature disables) —
 defaults, `fetch`/`activate`/`fetchAndActivate`, typed getters, config settings,
 and real-time config updates.
 
+> **tvOS note:** the SDK stores `RemoteConfig.sqlite3` in the purgeable Caches
+> directory (not Application Support as on iOS), so the system may discard the
+> last-activated config under disk pressure. Set in-app defaults and don't rely
+> on a previously-activated value persisting across launches.
+
 ## License
 
 fluttertv under a BSD-3-Clause license. See `LICENSE` for the full text.
