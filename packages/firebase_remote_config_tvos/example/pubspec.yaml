@@ -14,8 +14,7 @@ dependencies:
   firebase_remote_config: 6.5.3
   firebase_remote_config_tvos:
     path: ../
-  firebase_core_tvos:
-    path: ../../firebase_core_tvos
+  firebase_core_tvos: ^0.0.1
   flutter:
     sdk: flutter
 
