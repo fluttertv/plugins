@@ -1,0 +1,234 @@
+name: CI
+
+# What this does and does not cover.
+#
+# Stock Flutter is enough for everything here — resolution, analysis and the
+# Dart tests all work without the tvOS embedder, which is why this runs on
+# ubuntu instead of a macOS runner. What it therefore does NOT cover is the half
+# that needs Apple hardware: podspecs are never resolved, tvOS sources are never
+# compiled, nothing runs on a simulator. Those stay a reviewer's job, and the
+# porting reports are where that evidence belongs.
+#
+# One more blind spot worth naming: `flutter pub get` honours a committed root
+# pubspec_overrides.yaml, and four packages ship one. For those, the hosted
+# constraint in pubspec.yaml — the one consumers actually resolve against — is
+# never exercised here. An unsatisfiable constraint resolves green. Closing it
+# needs a second resolve with overrides moved aside; the cheaper fix is deleting
+# the four overrides, which are obsolete now that firebase_core_tvos is
+# published.
+#
+# Worth knowing why the `repo` job exists at all: stock flutter_tools does not
+# validate the `tvos:` platform key. `_validateMultiPlatformYaml` knows only
+# android/ios/linux/macos/windows and ignores anything else, so `flutter pub
+# get` will happily accept a tvOS block with no pluginClass. Nothing in the
+# Flutter half of this workflow can catch that; check_repo.py's R5 is the only
+# thing standing between it and a MissingPluginException on a device.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  # Per-ref, and only cancellable on pull requests: superseding a PR run is what
+  # you want, while on main a cancelled run tells you nothing about whether that
+  # commit was ever green.
+  #
+  # This does NOT guarantee one build per merge. GitHub keeps at most one
+  # *pending* run per concurrency group and cancels the previous pending one
+  # regardless of this setting, so back-to-back merges can still skip a build.
+  # Guaranteeing one per merge would need a queue, which cannot be combined with
+  # a truthy cancel-in-progress.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  # Pinned rather than "stable" so a Flutter release cannot turn a green PR red
+  # without a commit here saying so. Bump deliberately.
+  FLUTTER_VERSION: "3.44.0"
+
+jobs:
+  repo:
+    name: repo structure
+    runs-on: ubuntu-latest
+    outputs:
+      packages: ${{ steps.list.outputs.packages }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Preinstalled on ubuntu-latest, but asserted rather than assumed: an
+      # ImportError here would fail the job with a traceback instead of a
+      # sentence, and this job is the only gate on several invariants.
+      - name: Ensure PyYAML
+        run: python3 -c "import yaml" 2>/dev/null || pip install --quiet pyyaml
+
+      # Before the real run: the rules are only half the file, and on a passing
+      # tree none of the failure paths execute. An earlier revision had four of
+      # five rules silently accepting trees they were written to reject, and
+      # nothing could have told us. Each case asserts in both directions.
+      - name: Self-test the checker
+        run: python3 .github/scripts/check_repo.py --selftest
+
+      - name: Structural invariants
+        run: python3 .github/scripts/check_repo.py .
+
+      # One definition of "a package", shared with the matrix below. When the
+      # workflow derived its own list, the two could disagree silently — a
+      # directory the checker skipped still got a build job, and vice versa.
+      - id: list
+        run: |
+          set -euo pipefail
+          names=$(python3 .github/scripts/check_repo.py --list .)
+          count=$(printf '%s\n' "$names" | grep -c . || true)
+          if [ "$count" -eq 0 ]; then
+            echo "::error::No packages discovered — refusing to report a vacuous pass."
+            exit 1
+          fi
+          # `find`, not `ls -d packages/*/`: with packages/ empty or absent the
+          # glob does not expand, ls exits 2, and `set -e` kills the step before
+          # the guard above can explain what happened.
+          # `-not -name '.*'` mirrors discover()'s filter. Without it a dotted
+          # directory under packages/ — a .template/ scaffold, a tool cache —
+          # makes the counts disagree and the step hard-fails blaming a silent
+          # drop that is not happening.
+          dirs=$(find packages -mindepth 1 -maxdepth 1 -type d -not -name '.*' | wc -l | tr -d ' ')
+          # A silent drop is the failure this whole job exists to prevent, so
+          # compare against the raw directory count rather than trusting the
+          # filter to have kept everything.
+          if [ "$count" -ne "$dirs" ]; then
+            echo "::error::Discovered $count package(s) but packages/ holds $dirs directories."
+            echo "Something under packages/ is not being checked. Names seen:"
+            printf '%s\n' "$names"
+            exit 1
+          fi
+          # Assigned on its own line rather than inline in the echo: a failing
+          # jq inside a command substitution used as an argument is invisible to
+          # both `set -e` and pipefail, because `echo` itself succeeds. The step
+          # would go green having written an empty `packages` output, and the
+          # run would die later on "Unexpected end of JSON input" pointing at
+          # the wrong job.
+          pkgs=$(printf '%s\n' "$names" | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          case "$pkgs" in
+            \[*\]) ;;
+            *) echo "::error::Package list is not a JSON array: '$pkgs'"; exit 1 ;;
+          esac
+          echo "packages=$pkgs" >> "$GITHUB_OUTPUT"
+          echo "Discovered $count package(s)."
+
+  package:
+    name: ${{ matrix.package }}
+    needs: repo
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJSON(needs.repo.outputs.packages) }}
+    defaults:
+      run:
+        working-directory: packages/${{ matrix.package }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: flutter pub get
+        run: flutter pub get
+
+      # Scoped to the package's own Dart. Analysing the package root would also
+      # descend into example/ and into nested packages that were never resolved
+      # (audioplayers_tvos ships an example/server with its own pubspec) and
+      # report their unresolved imports as this package's errors.
+      #
+      # One invocation per directory rather than `dart analyze $targets`. Under
+      # Actions the shell is bash, where the unquoted expansion does split, so
+      # the collapsed form works here — but it silently breaks when pasted into
+      # a macOS zsh prompt, which does not word-split: `dart analyze` then gets
+      # the single argument "lib test" and exits 64. Two invocations behave the
+      # same in both shells.
+      #
+      # `dart analyze` is fatal on errors AND warnings, and reports infos
+      # without failing.
+      - name: dart analyze (lib + test)
+        run: |
+          dart analyze lib
+          if [ -d test ]; then
+            dart analyze test
+          else
+            echo "::warning::no test/ directory to analyse"
+          fi
+
+      # `flutter test` discovers test/**/*_test.dart recursively. An earlier
+      # version gated this on `ls test/*.dart`, which only sees the top level:
+      # move the tests into test/unit/ — an ordinary tidy-up — and every package
+      # silently stopped running them while the log claimed there was no test
+      # directory at all.
+      - name: flutter test
+        run: |
+          if [ ! -d test ]; then
+            echo "::warning::no test/ directory — nothing ran"
+            exit 0
+          fi
+          if ! find test -name '*_test.dart' -print -quit | grep -q .; then
+            echo "::warning::test/ exists but holds no *_test.dart — nothing ran"
+            exit 0
+          fi
+          flutter test
+
+      # The example is what a user copies, so it has to resolve and analyse.
+      #
+      # Note these do not all get the same treatment. Examples with no
+      # analysis_options.yaml of their own inherit the plugin's strict-casts /
+      # strict-inference / strict-raw-types. Measured on Dart 3.12: strict-casts
+      # produces errors, the other two produce warnings — which `dart analyze`
+      # also treats as fatal, so all three gate. Not hypothetical: the commit
+      # adding this workflow had to fix exactly such an error in
+      # device_info_plus_tvos's example.
+      #
+      # The examples that do carry an options file are not uniformly looser, and
+      # it would be a mistake to "unify" by assuming they are: path_provider's
+      # repeats the same strict block, sqflite's repeats two thirds of it, and
+      # flutter_secure_storage's uses very_good_analysis, which is stricter than
+      # anything here. Only the plain flutter_lints ones are genuinely looser.
+      - name: example — resolve and analyse
+        run: |
+          if [ ! -f example/pubspec.yaml ]; then
+            echo "::warning::no example/ — nothing resolved or analysed"
+            exit 0
+          fi
+          cd example
+          flutter pub get
+          if [ ! -d lib ]; then
+            echo "::error::example/ has no lib/ — a Flutter example without one is broken"
+            exit 1
+          fi
+          dart analyze lib
+
+  # A single stable name for branch protection. The matrix legs are named after
+  # the packages they build, so their check names come and go with the tree:
+  # adding a package creates a check that is not in the protection list, and its
+  # failure would not block the merge — exactly the case a derived matrix exists
+  # to cover. `if: always()` plus explicit result assertions is required, since
+  # a skipped job otherwise counts as success.
+  ci:
+    name: ci
+    # `!cancelled()` rather than `always()`: both keep the job running when an
+    # upstream one is skipped (which is the property that matters, since a
+    # skipped job otherwise counts as success), but `always()` also runs on
+    # cancellation and then asserts 'cancelled' = 'success', posting a red
+    # required check for every superseded PR run.
+    if: ${{ !cancelled() }}
+    needs: [repo, package]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Assert every job succeeded
+        run: |
+          echo 'repo=${{ needs.repo.result }} package=${{ needs.package.result }}'
+          [ '${{ needs.repo.result }}' = 'success' ] || exit 1
+          [ '${{ needs.package.result }}' = 'success' ] || exit 1
