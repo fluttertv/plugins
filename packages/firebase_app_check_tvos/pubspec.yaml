@@ -16,7 +16,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  firebase_app_check: ^0.4.5
+  # Pinned below 0.4.6: that release moves the platform-interface pigeon
+  # contract (new getTokenResult channel; activate() gains a 5th
+  # recaptchaSiteKey arg) which the generated Swift here does not cover.
+  firebase_app_check: ">=0.4.5 <0.4.6"
   # Transitive Dart dependency so the app's dependency graph includes
   # firebase_core_tvos — plugin discovery (tvos_plugins.dart) only adds a
   # package's native pod to the generated Podfile if it's reachable here,
