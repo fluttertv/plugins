@@ -35,8 +35,9 @@ package's `README.md` and `PORTING_REPORT.md`.
 | [`firebase_auth_tvos`](packages/firebase_auth_tvos) [![pub](https://img.shields.io/pub/v/firebase_auth_tvos.svg)](https://pub.dev/packages/firebase_auth_tvos) | [`firebase_auth`](https://pub.dev/packages/firebase_auth) |
 | [`cloud_firestore_tvos`](packages/cloud_firestore_tvos) [![pub](https://img.shields.io/pub/v/cloud_firestore_tvos.svg)](https://pub.dev/packages/cloud_firestore_tvos) | [`cloud_firestore`](https://pub.dev/packages/cloud_firestore) |
 | [`firebase_storage_tvos`](packages/firebase_storage_tvos) [![pub](https://img.shields.io/pub/v/firebase_storage_tvos.svg)](https://pub.dev/packages/firebase_storage_tvos) | [`firebase_storage`](https://pub.dev/packages/firebase_storage) |
-| [`firebase_messaging_tvos`](packages/firebase_messaging_tvos) [![pub](https://img.shields.io/pub/v/firebase_messaging_tvos.svg)](https://pub.dev/packages/firebase_messaging_tvos) | [`firebase_messaging`](https://pub.dev/packages/firebase_messaging) |
 | [`firebase_ai_tvos`](packages/firebase_ai_tvos) [![pub](https://img.shields.io/pub/v/firebase_ai_tvos.svg)](https://pub.dev/packages/firebase_ai_tvos) | [`firebase_ai`](https://pub.dev/packages/firebase_ai) |
+| [`firebase_messaging_tvos`](packages/firebase_messaging_tvos) [![pub](https://img.shields.io/pub/v/firebase_messaging_tvos.svg)](https://pub.dev/packages/firebase_messaging_tvos) | [`firebase_messaging`](https://pub.dev/packages/firebase_messaging) |
+| [`firebase_analytics_tvos`](packages/firebase_analytics_tvos) [![pub](https://img.shields.io/pub/v/firebase_analytics_tvos.svg)](https://pub.dev/packages/firebase_analytics_tvos) | [`firebase_analytics`](https://pub.dev/packages/firebase_analytics) |
 
 ### Evaluated but not provided
 
