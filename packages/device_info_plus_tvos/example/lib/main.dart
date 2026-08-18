@@ -17,7 +17,7 @@ void main() {
     () {
       runApp(const MyApp());
     },
-    (dynamic error, dynamic stack) {
+    (Object error, StackTrace stack) {
       developer.log("Something went wrong!", error: error, stackTrace: stack);
     },
   );
