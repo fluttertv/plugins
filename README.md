@@ -39,6 +39,7 @@ package's `README.md` and `PORTING_REPORT.md`.
 | [`firebase_performance_tvos`](packages/firebase_performance_tvos) [![pub](https://img.shields.io/pub/v/firebase_performance_tvos.svg)](https://pub.dev/packages/firebase_performance_tvos) | [`firebase_performance`](https://pub.dev/packages/firebase_performance) |
 | [`firebase_storage_tvos`](packages/firebase_storage_tvos) [![pub](https://img.shields.io/pub/v/firebase_storage_tvos.svg)](https://pub.dev/packages/firebase_storage_tvos) | [`firebase_storage`](https://pub.dev/packages/firebase_storage) |
 | [`firebase_messaging_tvos`](packages/firebase_messaging_tvos) [![pub](https://img.shields.io/pub/v/firebase_messaging_tvos.svg)](https://pub.dev/packages/firebase_messaging_tvos) | [`firebase_messaging`](https://pub.dev/packages/firebase_messaging) |
+| [`cloud_functions_tvos`](packages/cloud_functions_tvos) [![pub](https://img.shields.io/pub/v/cloud_functions_tvos.svg)](https://pub.dev/packages/cloud_functions_tvos) | [`cloud_functions`](https://pub.dev/packages/cloud_functions) |
 | [`firebase_analytics_tvos`](packages/firebase_analytics_tvos) [![pub](https://img.shields.io/pub/v/firebase_analytics_tvos.svg)](https://pub.dev/packages/firebase_analytics_tvos) | [`firebase_analytics`](https://pub.dev/packages/firebase_analytics) |
 | [`firebase_crashlytics_tvos`](packages/firebase_crashlytics_tvos) [![pub](https://img.shields.io/pub/v/firebase_crashlytics_tvos.svg)](https://pub.dev/packages/firebase_crashlytics_tvos) | [`firebase_crashlytics`](https://pub.dev/packages/firebase_crashlytics) |
 
