@@ -16,7 +16,7 @@ it:
 ```yaml
 dependencies:
   firebase_core: ^4.11.0
-  firebase_core_tvos: ^0.0.1
+  firebase_core_tvos: ^0.0.2
 ```
 
 The native plugin registers automatically through flutter-tvos' plugin
