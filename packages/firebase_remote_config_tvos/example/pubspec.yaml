@@ -1,0 +1,27 @@
+name: firebase_remote_config_example
+description: Demonstrates how to use the firebase_remote_config plugin on tvOS.
+publish_to: none
+
+environment:
+  sdk: '^3.6.0'
+  flutter: '>=3.27.0'
+
+dependencies:
+  # Pinned to the train the published _tvos packages ship on (firebase_core
+  # 4.11.x -> firebase_core_platform_interface 7.1.0). Keeps the native Pigeon
+  # ABI in sync with firebase_core_tvos.
+  firebase_core: 4.11.0
+  firebase_remote_config: 6.5.3
+  firebase_remote_config_tvos:
+    path: ../
+  firebase_core_tvos: ^0.0.1
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_lints: ^4.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
