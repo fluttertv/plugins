@@ -29,6 +29,13 @@ method channel that returns the app's bundle identifier — so this package has
 **no Firebase native SDK dependency** and does not depend on `firebase_core_tvos`
 itself (your app still needs `firebase_core_tvos` for `Firebase.initializeApp`).
 
+> **If you also use App Check or Auth with `firebase_ai`.** When those services
+> are registered, `firebase_ai` attaches their tokens to its request headers
+> (`getToken()` / `getIdToken()`) — and those calls are native. Add the matching
+> tvOS implementation or you'll hit a `MissingPluginException`:
+> `firebase_app_check_tvos` for App Check, `firebase_auth_tvos` for Auth. Plain
+> Gemini, with neither service touched, needs only `firebase_core_tvos`.
+
 ## Status
 
 | Platform | Implemented | Verified |
@@ -36,12 +43,14 @@ itself (your app still needs `firebase_core_tvos` for `Firebase.initializeApp`).
 | Apple TV (`appletvos`) | yes | ✅ verified on a **physical Apple TV 4K** (tvOS 26.x, release/AOT) — `generateContent` reached the Gemini backend and was authenticated + model-resolved on-device |
 | Apple TV simulator (`appletvsimulator`) | yes | ✅ verified — same authenticated `generateContent` round-trip against a live project |
 
-Full `firebase_ai` API is available on tvOS (Gemini Developer API via
-`FirebaseAI.googleAI()` and Vertex AI via `FirebaseAI.vertexAI()`), no feature
-disables. The request round-trip (native registration → Dart → Gemini backend →
-authenticated response) is verified on device and simulator; returning generated
-content additionally requires the Firebase project to have Gemini API
-billing/credits available.
+The `firebase_ai` Dart API works on tvOS unchanged — Gemini Developer API via
+`FirebaseAI.googleAI()` and Vertex AI via `FirebaseAI.vertexAI()` — because every
+request is made from Dart over HTTPS, so nothing is platform-gated. The request
+round-trip (native registration → Dart → Gemini backend → authenticated response)
+is verified on device and simulator; returning generated content additionally
+requires the Firebase project to have Gemini API billing/credits available. (If
+your app pairs `firebase_ai` with App Check or Auth, see the dependency note
+above.)
 
 ## License
 
