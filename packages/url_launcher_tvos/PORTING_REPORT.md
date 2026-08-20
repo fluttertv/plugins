@@ -67,10 +67,10 @@ tvOS-honest:
   method-channel `_tvos` plugins (e.g. `shared_preferences_tvos`). flutter-tvos's
   Podfile skips SPM-owned plugins, so the two never double-link.
 - **Version floor:** the package keeps the repo-standard `flutter: >=3.13.0`, not
-  upstream 6.4.1's `>=3.38.0`. That bump was made upstream for iOS `UIScene`
-  reasons in the in-app-browser presentation path — code this port disables on
-  tvOS — so the shipped tvOS slice needs nothing newer, and this stays consistent
-  with the sibling `_tvos` packages.
+  upstream 6.4.1's `>=3.38.0` / Dart 3.10 (raised in 6.4.0). Nothing in this tvOS
+  slice uses an API that needs the higher floor — the port builds and `dart
+  analyze`s clean under it — and `>=3.13.0` keeps it consistent with the sibling
+  `_tvos` packages.
 
 ## Verification
 
