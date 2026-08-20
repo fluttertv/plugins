@@ -7,13 +7,13 @@ Output: `./url_launcher_tvos`
 
 ## Summary
 
-| Status                                         | Count                                                                                         |
-| ---------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| Pigeon methods kept + registered on tvOS       | 4 (`canLaunchUrl`, `launchUrl`, `openUrlInSafariViewController`, `closeSafariViewController`) |
-| Native methods behaving as-is on tvOS          | 2 (`canLaunchUrl`, `launchUrl`)                                                               |
-| Native methods returning an honest tvOS result | 2 (`openUrlInSafariViewController` → `.noUI`; `closeSafariViewController` → no-op)            |
-| Native regions disabled on tvOS                | 1 (the entire `URLLaunchSession` — SFSafariViewController)                                    |
-| tvOS build outlook                             | ✅ compiles (arm64 simulator, verified)                                                       |
+| Status                                                         | Count                                                                                          |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Pigeon methods kept + registered on tvOS                       | 4 (`canLaunchUrl`, `launchUrl`, `openUrlInSafariViewController`, `closeSafariViewController`)  |
+| Native methods behaving as-is on tvOS                          | 2 (`canLaunchUrl`, `launchUrl`)                                                                |
+| Host methods kept for conformance, never called from tvOS Dart | 2 (`openUrlInSafariViewController`, `closeSafariViewController` — Dart falls back to external) |
+| Native regions disabled on tvOS                                | 1 (the entire `URLLaunchSession` — SFSafariViewController)                                     |
+| tvOS build outlook                                             | ✅ compiles (arm64 simulator, verified)                                                        |
 
 ## The one tvOS-absent API
 
@@ -49,13 +49,16 @@ in-app browser path is disabled.
 This package's Dart runs **only on tvOS**, so it states tvOS behaviour directly
 (no platform guards). The class is renamed `UrlLauncherIOS` → `UrlLauncherTvos`
 (the `dartPluginClass` follows). The Pigeon-generated `messages.g.dart` is kept
-**byte-identical to upstream 6.4.1**. Three capability points were made
-tvOS-honest:
+**byte-identical to upstream 6.4.1**. The tvOS-honest behaviour:
 
-- `supportsMode(inAppBrowserView` / `inAppWebView)` → `false` (was `true`).
-- `supportsCloseForMode(...)` → `false` (nothing to close).
-- `launchUrl` with `platformDefault` resolves to an **external** launch
-  (upstream opens web URLs in-app here).
+- `supportsMode(inAppBrowserView` / `inAppWebView)` → `false` (was `true`);
+  `supportsCloseForMode(...)` → `false` (nothing to close).
+- **`launchUrl` falls back to an external launch for _every_ mode** (external,
+  `platformDefault`, in-app), matching the browser-less macOS/Windows/Linux
+  impls. This keeps the deprecated `launch('https://…')` — which infers an in-app
+  mode from the URL scheme — from throwing: it launches externally and an
+  unclaimed URL returns `false`. The in-app host methods stay registered for
+  conformance but are unused on tvOS.
 
 ## Packaging
 
@@ -69,45 +72,24 @@ tvOS-honest:
 - **Version floor:** the package keeps the repo-standard `flutter: >=3.13.0`, not
   upstream 6.4.1's `>=3.38.0` / Dart 3.10 (raised in 6.4.0). Nothing in this tvOS
   slice uses an API that needs the higher floor — the port builds and `dart
-  analyze`s clean under it — and `>=3.13.0` keeps it consistent with the sibling
+analyze`s clean under it — and `>=3.13.0` keeps it consistent with the sibling
   `_tvos` packages.
 
 ## Verification
 
-- `dart analyze` — no issues. `flutter test` — 4/4 pass (registration + the
-  tvOS `supportsMode` behaviour).
-- **`flutter-tvos build tvos --simulator --debug`** from `example/` — **Xcode
-  build succeeds (arm64)**.
-- **Runtime on a booted Apple TV 4K simulator** — all four Pigeon channels were
-  exercised; every one round-trips with **no `MissingPluginException`**:
-    - `canLaunchUrl(https://flutter.dev)` → `true`
-    - `launchUrl(external)` → `false` (nothing on the sim handles a bare web URL)
-    - in-app path → `PlatformException(no_ui_available)` (the honest tvOS stub)
-    - `closeWebView()` → returns (no-op)
-    - `supportsMode`: `inAppBrowserView=false`, `externalApplication=true`
-
-    Note: tvOS `canLaunchUrl` returned `true` for the web URL even though
-    `launchUrl` then returned `false` — so `canLaunchUrl` is not a reliable gate on
-    tvOS; callers should use the `launchUrl` return value (documented in the
-    README).
-
-- **Real external launch** — the example registers its own `ullauncherdemo://`
-  URL scheme (`CFBundleURLTypes` + `LSApplicationQueriesSchemes`) and launches it.
-  On the sim: `canLaunchUrl=true`, **`launchUrl(external)=true`**, and the native
-  `AppDelegate.application(_:open:)` logs the delivered URL — i.e.
-  `UIApplication.open` genuinely hands off on tvOS. This is the same mechanism an
-  app deep link (`imdb://`, etc.) uses; a bare web URL fails only because no app
-  claims it (no browser).
-- **Cross-app launch (separate manual checks — the targets below are _not_ part
-  of the shipped package).** To confirm `launchUrl` opens a _different_ app, not
-  just the example itself: on the **simulator**, a throwaway second app
-  registering `targetapp://` was installed and the example (temporarily pointed at
-  it) launched it — the second app's `AppDelegate` logged the delivered URL. On a
-  **physical Apple TV 4K** (release/AOT, `devicectl` install), the example
-  (temporarily pointed at an App Store URL) called `launchUrl` and the **App
-  Store** opened. Both confirm genuine app-to-app hand-off on real tvOS hardware.
-  The shipped example itself only launches its own `ullauncherdemo://` scheme
-  (above), so it stays self-contained.
+- `dart analyze` clean; `flutter test` — **11/11 pass**, including a `_FakeApi`
+  that asserts every mode (external, `platformDefault`, in-app, deprecated
+  `launch()`) reaches the external channel and never throws.
+- **`flutter-tvos build tvos --simulator`** — Xcode build succeeds (arm64), via
+  both the CocoaPods and SPM paths.
+- **Runtime on an Apple TV 4K simulator** — all four channels round-trip with no
+  `MissingPluginException`; `canLaunchUrl(web)` returns `true` while `launchUrl`
+  returns `false`, so `canLaunchUrl` isn't a reliable gate (documented in README).
+- **Real cross-app launch, two ways** (throwaway targets, not shipped): on the
+  sim the example launched a second app via `targetapp://` (its `AppDelegate`
+  logged the delivered URL); on a **physical Apple TV 4K** (release/AOT,
+  `devicectl`) `launchUrl` opened the **App Store**. `UIApplication.open`
+  genuinely hands off on tvOS.
 
 ## Checklist
 

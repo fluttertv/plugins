@@ -25,19 +25,20 @@ Then use the `url_launcher` API exactly as on iOS.
 tvOS has **no web browser** (no SafariServices / WebKit), so this
 implementation supports only the _external_ launch surface:
 
-| Capability                                                       | tvOS       | Notes                                                                                                                        |
-| ---------------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `canLaunchUrl`                                                   | ✅         | maps to `UIApplication.canOpenURL`                                                                                           |
-| `launchUrl` (external / universal link / app scheme)             | ✅         | maps to `UIApplication.open`; opens another installed app                                                                    |
-| `launchUrl` in-app browser (`inAppBrowserView` / `inAppWebView`) | ❌         | no `SFSafariViewController` on tvOS — `supportsMode` returns `false`; calling it throws `PlatformException(no_ui_available)` |
-| `closeWebView`                                                   | ❌ (no-op) | nothing to close — there is no in-app browser                                                                                |
+| Capability                                                       | tvOS          | Notes                                                                                                                                                                                                 |
+| ---------------------------------------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `canLaunchUrl`                                                   | ✅            | maps to `UIApplication.canOpenURL`                                                                                                                                                                    |
+| `launchUrl` (external / universal link / app scheme)             | ✅            | maps to `UIApplication.open`; opens another installed app                                                                                                                                             |
+| `launchUrl` in-app browser (`inAppBrowserView` / `inAppWebView`) | ⚠️ falls back | no `SFSafariViewController` on tvOS — `supportsMode` returns `false`, and a launch requested with an in-app mode **falls back to an external launch** (like macOS/Windows/Linux) rather than throwing |
+| `closeWebView`                                                   | ❌ (no-op)    | nothing to close — there is no in-app browser                                                                                                                                                         |
 
 Because there is no browser, a plain `http(s)` URL only opens if another
 installed app claims it (universal link / app URL scheme). Note that on tvOS
 `canLaunchUrl` can return `true` for a web URL even when nothing will actually
 handle it, so rely on the boolean returned by `launchUrl` rather than gating on
-`canLaunchUrl` alone. `platformDefault` resolves to an **external** launch on
-tvOS (the iOS implementation opens web URLs in-app).
+`canLaunchUrl` alone. **Every** launch mode — `platformDefault`, and the in-app
+browser modes — resolves to an **external** launch on tvOS (the iOS
+implementation opens web URLs in-app instead).
 
 ## Status
 

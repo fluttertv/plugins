@@ -27,11 +27,7 @@ let package = Package(
       dependencies: [
         .product(name: "FlutterFramework", package: "FlutterFramework"),
       ],
-      path: "Classes",
-      swiftSettings: [
-        // Keep Swift `#if TARGET_OS_TV` branches active, matching the podspec.
-        .define("TARGET_OS_TV"),
-      ]
+      path: "Classes"
     ),
   ]
 )

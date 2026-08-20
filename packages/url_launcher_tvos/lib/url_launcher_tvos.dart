@@ -12,8 +12,14 @@ import 'src/messages.g.dart';
 /// An implementation of [UrlLauncherPlatform] for tvOS.
 ///
 /// tvOS has no web browser (no SafariServices/WebKit), so the in-app browser
-/// modes are unsupported; external launches (`UIApplication.open`) and
-/// `canLaunch` (`canOpenURL`) work as on iOS. See `PORTING_REPORT.md`.
+/// modes are unsupported: [supportsMode] reports `false` for them and every
+/// launch falls back to an external launch (`UIApplication.open`), matching the
+/// other browser-less implementations (macOS/Windows/Linux). See
+/// `PORTING_REPORT.md`.
+///
+/// Note: [canLaunch] maps to `UIApplication.canOpenURL`, which on tvOS can
+/// return `true` for an `http(s)` URL even when no installed app will actually
+/// open it. Prefer the [launchUrl] return value over gating on [canLaunch].
 class UrlLauncherTvos extends UrlLauncherPlatform {
   /// Creates a new plugin implementation instance.
   UrlLauncherTvos({@visibleForTesting UrlLauncherApi? api})
@@ -29,6 +35,10 @@ class UrlLauncherTvos extends UrlLauncherPlatform {
   @override
   final LinkDelegate? linkDelegate = null;
 
+  /// Whether some installed app can handle [url] (`UIApplication.canOpenURL`).
+  ///
+  /// On tvOS this can return `true` for an `http(s)` URL even when nothing will
+  /// open it (there is no browser), so prefer checking the [launchUrl] result.
   @override
   Future<bool> canLaunch(String url) async {
     final LaunchResult result = await _hostApi.canLaunchUrl(url);
@@ -74,40 +84,16 @@ class UrlLauncherTvos extends UrlLauncherPlatform {
 
   @override
   Future<bool> launchUrl(String url, LaunchOptions options) async {
-    final bool inApp;
-    switch (options.mode) {
-      case PreferredLaunchMode.inAppWebView:
-      case PreferredLaunchMode.inAppBrowserView:
-        // The iOS implementation doesn't distinguish between these two modes;
-        // both are treated as inAppBrowserView.
-        inApp = true;
-      case PreferredLaunchMode.externalApplication:
-      case PreferredLaunchMode.externalNonBrowserApplication:
-        inApp = false;
-      case PreferredLaunchMode.platformDefault:
-      // Intentionally treat any new values as platformDefault; support for any
-      // new mode requires intentional opt-in, otherwise falling back is the
-      // documented behavior.
-      // ignore: no_default_cases, unreachable_switch_default
-      default:
-        // tvOS has no in-app browser, so the default is always an external
-        // launch (the iOS implementation opens web URLs in-app here instead).
-        inApp = false;
-    }
-
-    if (inApp) {
-      return _mapInAppLoadResult(
-        await _hostApi.openUrlInSafariViewController(url),
-        url: url,
-      );
-    } else {
-      return _mapLaunchResult(
-        await _hostApi.launchUrl(
-          url,
-          options.mode == PreferredLaunchMode.externalNonBrowserApplication,
-        ),
-      );
-    }
+    // tvOS has no in-app browser: every mode falls back to an external launch,
+    // matching the browser-less macOS/Windows/Linux implementations (the
+    // platform interface encourages falling back over failing). An unclaimed URL
+    // returns false rather than throwing.
+    return _mapLaunchResult(
+      await _hostApi.launchUrl(
+        url,
+        options.mode == PreferredLaunchMode.externalNonBrowserApplication,
+      ),
+    );
   }
 
   @override
@@ -148,21 +134,6 @@ class UrlLauncherTvos extends UrlLauncherPlatform {
     }
   }
 
-  bool _mapInAppLoadResult(InAppLoadResult result, {required String url}) {
-    switch (result) {
-      case InAppLoadResult.success:
-        return true;
-      case InAppLoadResult.failedToLoad:
-        throw _failedSafariViewControllerLoadException(url);
-      case InAppLoadResult.invalidUrl:
-        throw _invalidUrlException();
-      case InAppLoadResult.noUI:
-        throw _noUIException();
-      case InAppLoadResult.dismissed:
-        return false;
-    }
-  }
-
   // TODO(stuartmorgan): Remove this as part of standardizing error handling.
   // See https://github.com/flutter/flutter/issues/127665
   //
@@ -173,31 +144,6 @@ class UrlLauncherTvos extends UrlLauncherPlatform {
     throw PlatformException(
       code: 'argument_error',
       message: 'Unable to parse URL',
-    );
-  }
-
-  // TODO(stuartmorgan): Remove this as part of standardizing error handling.
-  // See https://github.com/flutter/flutter/issues/127665
-  //
-  // This PlatformException (including the exact string details, since those
-  // are a defacto part of the API) is for compatibility with the previous
-  // native implementation.
-  PlatformException _failedSafariViewControllerLoadException(String url) {
-    throw PlatformException(
-      code: 'Error',
-      message: 'Error while launching $url',
-    );
-  }
-
-  // TODO(stuartmorgan): Remove this as part of standardizing error handling.
-  // See https://github.com/flutter/flutter/issues/127665
-  //
-  // This PlatformException is designed to match the pattern of the pre-existing
-  // exceptions above.
-  PlatformException _noUIException() {
-    throw PlatformException(
-      code: 'no_ui_available',
-      message: 'No view controller available',
     );
   }
 }

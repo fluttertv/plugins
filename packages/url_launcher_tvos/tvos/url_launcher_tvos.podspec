@@ -12,12 +12,11 @@ Pod::Spec.new do |s|
 tvOS implementation of url_launcher, the federated platform
 package that ships native code targeting Apple tvOS.
                        DESC
-  s.homepage         = 'https://github.com/fluttertv/url_launcher_tvos'
+  s.homepage         = 'https://github.com/fluttertv/plugins/tree/main/packages/url_launcher_tvos'
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'The FlutterTV Authors' => 'noreply@fluttertv.dev' }
   s.source           = { :path => '.' }
-  s.source_files     = 'Classes/**/*'
-  s.public_header_files = 'Classes/**/*.h'
+  s.source_files     = 'Classes/**/*.swift'
   s.resource_bundles = { 'url_launcher_tvos_privacy' => ['Resources/PrivacyInfo.xcprivacy'] }
   s.platform         = :tvos, '13.0'
   s.swift_version    = '5.0'
@@ -28,7 +27,6 @@ package that ships native code targeting Apple tvOS.
   # FRAMEWORK_SEARCH_PATHS, populated by the host app's Podfile.
   s.xcconfig         = {
     'FRAMEWORK_SEARCH_PATHS' => '"${PODS_ROOT}/../Flutter"',
-    'OTHER_SWIFT_FLAGS'      => '$(inherited) -DTARGET_OS_TV',
   }
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES' }
 end
