@@ -1,3 +1,9 @@
+## 0.0.4
+
+* Add Swift Package Manager support: ships a `tvos/Package.swift` so the
+  package can be consumed via SwiftPM (the Flutter 3.44 default) alongside the
+  existing CocoaPods podspec. No API or behaviour change.
+
 ## 0.0.3
 
 * Regenerate the native Pigeon sources from `firebase_core` 4.13.0, which decode the

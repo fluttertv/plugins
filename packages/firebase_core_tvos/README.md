@@ -16,7 +16,7 @@ it:
 ```yaml
 dependencies:
   firebase_core: ^4.13.0
-  firebase_core_tvos: ^0.0.3
+  firebase_core_tvos: ^0.0.4
 ```
 
 The native plugin registers automatically through flutter-tvos' plugin
@@ -46,3 +46,10 @@ matrices — see their respective `*_tvos` packages.
 ## License
 
 fluttertv, under a BSD-3-Clause license. See `LICENSE` for the full text.
+
+## Dependency management
+
+Supports both **Swift Package Manager** and **CocoaPods** from a single
+source tree. `flutter-tvos` wires the right one automatically: apps on
+Flutter 3.44+ link it via SwiftPM (this package ships a `tvos/Package.swift`),
+while CocoaPods-based projects keep using the podspec. No manual setup needed.

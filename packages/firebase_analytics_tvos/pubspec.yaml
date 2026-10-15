@@ -2,7 +2,7 @@ name: firebase_analytics_tvos
 description: >-
   tvOS (Apple TV) implementation of the firebase_analytics Flutter plugin,
   providing Firebase Analytics event logging on Apple TV.
-version: 0.0.1
+version: 0.0.2
 homepage: https://fluttertv.dev
 repository: https://github.com/fluttertv/plugins/tree/main/packages/firebase_analytics_tvos
 issue_tracker: https://github.com/fluttertv/plugins/issues
