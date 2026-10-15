@@ -2,7 +2,7 @@ name: firebase_core_tvos
 description: >-
   tvOS (Apple TV) implementation of the firebase_core Flutter plugin, enabling
   Firebase initialization on Apple TV via the flutter-tvos toolchain.
-version: 0.0.3
+version: 0.0.4
 homepage: https://fluttertv.dev
 repository: https://github.com/fluttertv/plugins/tree/main/packages/firebase_core_tvos
 issue_tracker: https://github.com/fluttertv/plugins/issues

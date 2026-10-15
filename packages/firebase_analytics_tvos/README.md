@@ -14,7 +14,7 @@ automatically. Apps that already use `firebase_analytics` and target tvOS add:
 ```yaml
 dependencies:
     firebase_analytics: ^12.4.3
-    firebase_analytics_tvos: ^0.0.1
+    firebase_analytics_tvos: ^0.0.2
     firebase_core: ^4.11.0
     firebase_core_tvos: ^0.0.1 # tvOS core (this package depends on it)
 ```
@@ -43,3 +43,10 @@ on-device-conversion flow against it on tvOS. Events appear in Firebase
 ## License
 
 fluttertv under a BSD-3-Clause license. See `LICENSE` for the full text.
+
+## Dependency management
+
+Supports both **Swift Package Manager** and **CocoaPods** from a single
+source tree. `flutter-tvos` wires the right one automatically: apps on
+Flutter 3.44+ link it via SwiftPM (this package ships a `tvos/Package.swift`),
+while CocoaPods-based projects keep using the podspec. No manual setup needed.
