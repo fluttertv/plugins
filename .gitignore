@@ -40,3 +40,6 @@ pubspec.lock
 *.iml
 .vscode/
 .DS_Store
+
+# Python
+__pycache__/

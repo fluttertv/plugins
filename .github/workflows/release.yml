@@ -1,0 +1,166 @@
+name: Release
+
+# Merge to main → CI green → tag → publish to pub.dev.
+#
+# Runs after CI finishes on a push to main, and only if it succeeded, so a
+# release never goes out from a commit CI rejected. release_plan.py picks the
+# packages whose pubspec version is not on pub.dev yet (and checks that the
+# version tops CHANGELOG.md and is newer than what pub.dev has). Each candidate
+# is re-verified on exactly that commit — analyse, test, `flutter pub publish
+# --dry-run` — then tagged `<package>-v<version>`, and publish.yml is
+# dispatched on the tag.
+#
+# Why dispatch instead of letting the tag push trigger publish.yml: a tag
+# created with GITHUB_TOKEN does not trigger `on: push` workflows (GitHub's
+# guard against recursive runs), but a workflow_dispatch from GITHUB_TOKEN is
+# allowed. pub.dev accepts both events from a tag ref once each package has
+# "workflow_dispatch" enabled in its automated-publishing settings. No PAT or
+# app token is needed. Pushing a tag by hand still works through `on: push`.
+#
+# workflow_dispatch here re-runs the plan on the tip of main — the way to
+# retry after fixing pub.dev settings, or when back-to-back merges made CI
+# skip a commit (see the concurrency note in ci.yml).
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # Never cancel: a half-finished release (tagged, not dispatched) is the one
+  # state this workflow should not leave behind.
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.sha.outputs.sha }}
+      candidates: ${{ steps.plan.outputs.candidates }}
+      problems: ${{ steps.plan.outputs.problems }}
+      flutter: ${{ steps.flutter.outputs.version }}
+    steps:
+      - id: sha
+        run: echo "sha=${{ github.event.workflow_run.head_sha || github.sha }}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.sha.outputs.sha }}
+
+      # Only ever release what main points at. A workflow_run for an older
+      # commit can arrive after a newer one has landed; its packages will be
+      # picked up by the newer commit's own run.
+      - name: Commit is still on main
+        if: github.event_name == 'workflow_run'
+        run: |
+          git fetch --depth=1 origin main
+          if [ "$(git rev-parse FETCH_HEAD)" != "${{ steps.sha.outputs.sha }}" ]; then
+            echo "::notice::main has moved past ${{ steps.sha.outputs.sha }}; the newer run releases."
+            echo "SKIP=1" >> "$GITHUB_ENV"
+          fi
+
+      # One source of truth for the Flutter version: the one CI just passed with.
+      - id: flutter
+        run: |
+          v=$(sed -n 's/^  FLUTTER_VERSION: *"\(.*\)".*/\1/p' .github/workflows/ci.yml)
+          [ -n "$v" ] || { echo "::error::FLUTTER_VERSION not found in ci.yml"; exit 1; }
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+
+      - name: Ensure PyYAML
+        run: python3 -c "import yaml" 2>/dev/null || pip install --quiet pyyaml
+
+      - id: plan
+        run: |
+          if [ "${SKIP:-}" = 1 ]; then
+            echo "candidates=[]" >> "$GITHUB_OUTPUT"
+            echo "problems=0" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          python3 .github/scripts/release_plan.py . --github-output
+
+  release:
+    name: ${{ matrix.package }} ${{ matrix.version }}
+    needs: plan
+    if: needs.plan.outputs.candidates != '[]' && needs.plan.outputs.candidates != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the tag
+      actions: write # dispatch publish.yml
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.candidates) }}
+    defaults:
+      run:
+        working-directory: packages/${{ matrix.package }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.plan.outputs.sha }}
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ needs.plan.outputs.flutter }}
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      # Same checks as CI's package job. CI already passed on this commit;
+      # repeating the package's own half costs a minute and means the tag is
+      # placed by a job that saw the checks pass, not one that trusted a status.
+      - name: dart analyze
+        run: |
+          dart analyze lib
+          if [ -d test ]; then dart analyze test; fi
+
+      - name: flutter test
+        run: |
+          if find test -name '*_test.dart' -print -quit 2>/dev/null | grep -q .; then
+            flutter test
+          else
+            echo "::warning::no tests to run"
+          fi
+
+      # Exits non-zero on warnings; hints (such as the pubspec_overrides one
+      # the firebase packages get) do not fail it.
+      - name: flutter pub publish --dry-run
+        run: flutter pub publish --dry-run
+
+      - name: Tag ${{ matrix.tag }}
+        if: ${{ !matrix.tag_exists }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/${{ github.repository }}/git/refs" \
+            -f ref="refs/tags/${{ matrix.tag }}" \
+            -f sha="${{ needs.plan.outputs.sha }}"
+
+      - name: Dispatch publish on ${{ matrix.tag }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run publish.yml --repo "${{ github.repository }}" --ref "${{ matrix.tag }}"
+          echo "Publishing ${{ matrix.package }} ${{ matrix.version }} — follow it under the Publish workflow." >> "$GITHUB_STEP_SUMMARY"
+
+  # Packages whose metadata release_plan.py rejected (version not on top of
+  # CHANGELOG.md, not newer than pub.dev, ...). Kept out of `plan` so the
+  # healthy packages in the same merge still release, but the run ends red.
+  problems:
+    needs: [plan, release]
+    if: ${{ !cancelled() && needs.plan.result == 'success' && needs.plan.outputs.problems != '0' }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "::error::${{ needs.plan.outputs.problems }} package(s) were not released; see the plan job's errors."
+          exit 1

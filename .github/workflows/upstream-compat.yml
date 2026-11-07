@@ -1,0 +1,148 @@
+name: Upstream compatibility
+
+# Catches upstream releases that break or exclude a plugin with no commit here:
+# a new upstream major outside our constraint, a minor release of a platform
+# interface that adds an abstract member, a new Flutter stable that rejects our
+# code. CI cannot see any of these — it is pinned on purpose, and runs only when
+# something here changes.
+#
+# Per package, upstream_check.py runs two legs on scratch copies of packages/:
+#   current  `flutter pub upgrade` (newest within our constraints)
+#   major    `flutter pub upgrade --major-versions <direct hosted deps>` — run
+#            only when pub outdated says a newer major exists
+# each followed by the CI package job's checks (analyse lib + test, flutter
+# test, resolve + analyse the example). upstream_issues.py then keeps exactly
+# one issue per package under the `upstream-compat` label, touching it only
+# when the finding changes, and closing it when the package passes again.
+#
+# Flutter is NOT pinned here, unlike CI: tracking the newest stable is the
+# point. If CI is green and this goes red on `current`, compare the Flutter
+# version in the issue with FLUTTER_VERSION in ci.yml first.
+#
+# Same blind spot as CI: nothing tvOS-native is compiled. An upstream change
+# that only shows up in Swift/ObjC is invisible here.
+
+on:
+  schedule:
+    - cron: "17 5 * * *" # daily, off the hour to dodge the scheduler rush
+  workflow_dispatch:
+    inputs:
+      package:
+        description: "Only this package (blank = all)"
+        required: false
+        default: ""
+      flutter_version:
+        description: "Flutter version (blank = newest stable)"
+        required: false
+        default: ""
+      dry_run:
+        description: "Report only; do not open, edit or close issues"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  list:
+    runs-on: ubuntu-latest
+    outputs:
+      packages: ${{ steps.list.outputs.packages }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ensure PyYAML
+        run: python3 -c "import yaml" 2>/dev/null || pip install --quiet pyyaml
+      - id: list
+        env:
+          ONLY: ${{ inputs.package }}
+        run: |
+          set -euo pipefail
+          names=$(python3 .github/scripts/check_repo.py --list .)
+          if [ -n "${ONLY:-}" ]; then
+            if ! printf '%s\n' "$names" | grep -qx -- "$ONLY"; then
+              echo "::error::No package named '$ONLY' under packages/."
+              exit 1
+            fi
+            names=$ONLY
+          fi
+          pkgs=$(printf '%s\n' "$names" | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          case "$pkgs" in
+            \[\]) echo "::error::No packages discovered."; exit 1 ;;
+            \[*\]) ;;
+            *) echo "::error::Package list is not a JSON array: '$pkgs'"; exit 1 ;;
+          esac
+          echo "packages=$pkgs" >> "$GITHUB_OUTPUT"
+
+  check:
+    name: ${{ matrix.package }}
+    needs: list
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJSON(needs.list.outputs.packages) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ inputs.flutter_version }}
+          cache: true
+
+      - name: Ensure PyYAML
+        run: python3 -c "import yaml" 2>/dev/null || pip install --quiet pyyaml
+
+      # Exits 0 whenever it wrote a report, broken package included. A non-zero
+      # exit means the tooling itself failed, and this leg goes red without a
+      # report — so no issue gets filed about a network blip.
+      - name: Check against newest upstream
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: python3 .github/scripts/upstream_check.py . "${{ matrix.package }}" --out reports
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: upstream-${{ matrix.package }}
+          path: reports/
+          if-no-files-found: error
+          retention-days: 14
+
+  issues:
+    # `!cancelled()`: a red leg (tooling failure) must not stop the other
+    # packages' findings from being filed. A package without a report is
+    # simply absent; its open issue, if any, is left as it was.
+    if: ${{ !cancelled() }}
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: upstream-*
+          path: reports
+      - name: Sync issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DRY_RUN: ${{ inputs.dry_run && '--dry-run' || '' }}
+        run: |
+          set -euo pipefail
+          # shellcheck disable=SC2086 # DRY_RUN is empty or one flag
+          python3 .github/scripts/upstream_issues.py reports --repo "${{ github.repository }}" $DRY_RUN
+      - name: Summary
+        run: |
+          {
+            echo "| package | status |"
+            echo "|---|---|"
+            for f in reports/*/*.json; do
+              jq -r '"| \(.package) | \(.status) |"' "$f"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
