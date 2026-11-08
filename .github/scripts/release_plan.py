@@ -18,10 +18,12 @@ A package that is not on pub.dev at all is skipped with a warning: pub.dev
 only allows automated publishing for packages that already exist, so the
 first version has to go up with `flutter pub publish` by hand.
 
-Output: a JSON list on stdout, one {package, version, tag, tag_exists} per
-candidate. `tag_exists` means an earlier run tagged this version but pub.dev
-still does not have it — the publish failed or was never approved — and the
-release job re-dispatches publishing instead of tagging again.
+Output: a JSON list on stdout, one {package, version, tag, tag_exists,
+tag_sha} per candidate. `tag_exists` means an earlier run tagged this version
+but pub.dev still does not have it — the publish failed, is still running, or
+is waiting for approval. The release job then re-dispatches publishing instead
+of tagging again, but only when `tag_sha` is the commit it just verified and no
+Publish run for the tag is already active.
 
 Exits non-zero if any package's metadata is inconsistent, so a bad bump fails
 the run in plain sight rather than quietly not publishing. With
@@ -47,7 +49,7 @@ from check_repo import (  # noqa: E402
     discover, load_yaml, newest_changelog_version, read_text,
 )
 
-SEMVER = re.compile(r"^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?$")
+SEMVER = re.compile(r"^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?(?:\+([0-9A-Za-z.-]+))?$")
 
 
 def tag_for(package, version):
@@ -56,15 +58,20 @@ def tag_for(package, version):
 
 
 def semver_key(version):
-    """Sort key with semver precedence: a prerelease sorts below its release."""
+    """Sort key with pub's precedence: a prerelease sorts below its release,
+    and, unlike strict semver, build metadata counts — 1.0.0+2 is newer than
+    1.0.0+1, which is newer than 1.0.0."""
     m = SEMVER.match(version)
     if not m:
         return None
-    major, minor, patch, pre = m.groups()
-    pre_key = (1,) if pre is None else (0, *[
-        (0, int(p), "") if p.isdigit() else (1, 0, p) for p in pre.split(".")
-    ])
-    return (int(major), int(minor), int(patch), pre_key)
+    major, minor, patch, pre, build = m.groups()
+
+    def ids(text):
+        return [(0, int(p), "") if p.isdigit() else (1, 0, p)
+                for p in text.split(".")]
+    pre_key = (1,) if pre is None else (0, *ids(pre))
+    build_key = () if build is None else tuple(ids(build))
+    return (int(major), int(minor), int(patch), pre_key, build_key)
 
 
 def pub_versions(package):
@@ -89,17 +96,23 @@ def pub_versions(package):
 
 
 def remote_tags(root):
-    """Tag names on origin. ls-remote, not local tags: the checkout is shallow
-    and may not have fetched them."""
+    """{tag name: commit sha} on origin. ls-remote, not local tags: the
+    checkout is shallow and may not have fetched them. An annotated tag is
+    listed twice; its peeled `^{}` line is the commit it points at."""
     proc = subprocess.run(["git", "ls-remote", "--tags", "origin"], cwd=root,
                           stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     if proc.returncode != 0:
         raise RuntimeError(f"git ls-remote failed: {proc.stderr.strip()}")
-    tags = set()
+    tags = {}
     for line in proc.stdout.splitlines():
-        ref = line.split("\t")[-1]
-        if ref.startswith("refs/tags/"):
-            tags.add(ref[len("refs/tags/"):].removesuffix("^{}"))
+        sha, _, ref = line.partition("\t")
+        if not ref.startswith("refs/tags/"):
+            continue
+        name = ref[len("refs/tags/"):]
+        if name.endswith("^{}"):
+            tags[name.removesuffix("^{}")] = sha
+        else:
+            tags.setdefault(name, sha)
     return tags
 
 
@@ -145,7 +158,8 @@ def plan(root, tags):
             continue
         tag = tag_for(pkg, version)
         candidates.append({"package": pkg, "version": version, "tag": tag,
-                           "tag_exists": tag in tags})
+                           "tag_exists": tag in tags,
+                           "tag_sha": tags.get(tag, "")})
     return candidates, problems
 
 

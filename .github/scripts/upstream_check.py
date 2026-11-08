@@ -26,7 +26,9 @@ It writes <out>/<package>.json for upstream_issues.py to turn into issues. Its
 exit code is about the tooling, not the findings: 0 whenever a report was
 written, including for a broken package, so one package's breakage cannot hide
 another's. Non-zero means no trustworthy report exists, and the workflow fails
-loudly instead of filing an issue about a network blip.
+loudly instead of filing an issue about a network blip: a resolve step that
+fails with pub's network errors (pub.dev unreachable, socket errors, 5xx) is a
+tooling failure, never a finding.
 
 Usage:
     upstream_check.py <repo-root> <package> --out <dir>
@@ -50,6 +52,22 @@ STEP_TIMEOUT = 20 * 60
 
 # Ignored when copying packages/ to scratch: build output and resolution state
 # that would make a scratch run differ from a fresh checkout.
+# pub's own wording when it could not talk to the package server. A resolve
+# step that fails with one of these says nothing about our package.
+NETWORK_ERROR = re.compile(
+    r"Got socket error|SocketException|Failed host lookup|HandshakeException|"
+    r"Connection (?:refused|reset|closed|timed out)|"
+    r"pub\.dev is having some trouble|having some trouble connecting|"
+    r"Server error|Could not resolve URL|Network is unreachable|"
+    r"TimeoutException",
+    re.IGNORECASE,
+)
+
+
+class ToolingError(Exception):
+    """The run cannot produce a trustworthy report (network, pub.dev down)."""
+
+
 COPY_IGNORE = shutil.ignore_patterns(
     ".dart_tool", "build", "pubspec.lock", ".flutter-plugins",
     ".flutter-plugins-dependencies", "Pods", ".symlinks", "DerivedData",
@@ -71,6 +89,16 @@ def run(cmd, cwd):
         return False, out + f"\n[timed out after {STEP_TIMEOUT}s]"
     except OSError as exc:
         return False, f"[could not run {cmd[0]}: {exc}]"
+
+
+def resolve(cmd, cwd):
+    """run() for a pub command that talks to the package server. A failure
+    caused by the network raises ToolingError instead of becoming a step."""
+    ok, out = run(cmd, cwd)
+    if not ok and NETWORK_ERROR.search(out):
+        raise ToolingError(f"{' '.join(cmd)} in {cwd} hit a network error:\n"
+                           + tail(out, 20))
+    return ok, out
 
 
 def tail(text, n=LOG_TAIL):
@@ -112,11 +140,14 @@ def outdated(pkg_dir):
 
     `pub outdated` already knows the difference: `upgradable` is the newest
     version the current constraints allow, `latest` the newest stable release.
-    When they differ for a direct dependency, the constraint is what holds us
-    back. Prereleases are not counted — `latest` excludes them by default.
+    When they differ by a major (a minor below 1.0.0) for a direct
+    dependency, a constraint is what holds us back — ours, or a sibling's.
+    A newer release on the same line that pub could not pick (an SDK bound, a
+    transitive pin) is the current leg's business, not a new major, so it is
+    not a row. Prereleases are not counted — `latest` excludes them by default.
     """
-    ok, out = run(["flutter", "pub", "outdated", "--json",
-                   "--no-dev-dependencies"], pkg_dir)
+    ok, out = resolve(["flutter", "pub", "outdated", "--json",
+                       "--no-dev-dependencies"], pkg_dir)
     if not ok:
         return None, out
     start = out.find("{")
@@ -132,7 +163,8 @@ def outdated(pkg_dir):
             continue
         upgradable = (row.get("upgradable") or {}).get("version")
         latest = (row.get("latest") or {}).get("version")
-        if latest and upgradable != latest:
+        if latest and upgradable != latest and not (
+                upgradable and same_line(upgradable, latest)):
             rows.append({"package": name, "constraint": wanted[name],
                          "upgradable": upgradable, "latest": latest})
     return rows, out
@@ -181,7 +213,7 @@ def example_checks(example_dir, steps, major):
     cmd = ["flutter", "pub", "upgrade"]
     if major and deps:
         cmd += ["--major-versions", *deps]
-    ok, out = run(cmd, example_dir)
+    ok, out = resolve(cmd, example_dir)
     steps.append({"name": "example: " + " ".join(cmd[1:]), "ok": ok,
                   "log": tail(out)})
     if not ok:
@@ -207,6 +239,18 @@ def same_line(resolved, latest):
     return a[:2] == b[:2] if b[0] == 0 else a[0] == b[0]
 
 
+def caret_line(version):
+    """The caret line a version starts: "8" for 8.0.2, "0.5" for 0.5.3.
+
+    Fingerprints and step names use this rather than the full version, so an
+    upstream patch or minor on the same line does not count as a new finding.
+    """
+    parts = re.split(r"[.+-]", version or "")
+    if len(parts) >= 2 and parts[0] == "0":
+        return f"0.{parts[1]}"
+    return parts[0] if parts and parts[0] else str(version)
+
+
 def force_newest(pkg_dir, rows, steps):
     """Make sure the major leg really tests the new majors.
 
@@ -226,11 +270,14 @@ def force_newest(pkg_dir, rows, steps):
         if have and same_line(have, row["latest"]):
             continue
         spec = f"{row['package']}:^{row['latest']}"
-        ok, out = run(["flutter", "pub", "add", spec], pkg_dir)
-        # The held-back version goes in the log, not the name: the name feeds
-        # the issue fingerprint, and every upstream patch would rewrite it.
-        steps.append({"name": f"pub add {spec}", "ok": ok,
-                      "log": f"[pub upgrade --major-versions kept {have}]\n" + tail(out)})
+        ok, out = resolve(["flutter", "pub", "add", spec], pkg_dir)
+        # Exact versions go in the log, not the name: the name feeds the issue
+        # fingerprint, and every upstream patch would otherwise rewrite it.
+        steps.append({"name": f"pub add {row['package']} "
+                              f"(newest line, {caret_line(row['latest'])}.x)",
+                      "ok": ok,
+                      "log": f"[pub add {spec}; pub upgrade --major-versions "
+                             f"kept {have}]\n" + tail(out)})
         if not ok:
             return False
     return True
@@ -252,7 +299,7 @@ def leg(repo, package, major, rows=()):
             # dev_dependencies such as flutter_lints, and a new lint set is not
             # an upstream compatibility problem.
             cmd += ["--major-versions", *sorted(before)]
-        ok, out = run(cmd, pkg_dir)
+        ok, out = resolve(cmd, pkg_dir)
         steps.append({"name": " ".join(cmd[1:]), "ok": ok, "log": tail(out)})
         if ok and major:
             ok = force_newest(pkg_dir, rows, steps)
@@ -286,9 +333,11 @@ def tool_versions():
 def fingerprint(report):
     """What has to change before an open issue is worth touching again.
 
-    Deliberately excludes logs, which carry timings and paths, and the Flutter
-    version — every new stable would otherwise rewrite every open issue even
-    when the failure is the same. A new stable that *changes* the outcome
+    Deliberately excludes logs, which carry timings and paths, the Flutter
+    version, and exact upstream versions — every new stable or upstream patch
+    would otherwise rewrite every open issue even when the failure is the
+    same. Upstream releases count by caret line, so a new *major* is a new
+    finding and 8.0.1 → 8.0.2 is not. A new stable that *changes* the outcome
     changes the failing step, which is in here.
     """
     def failing(leg_report):
@@ -298,7 +347,8 @@ def fingerprint(report):
 
     key = {
         "status": report["status"],
-        "outdated": sorted((o["package"], o["latest"]) for o in report["outdated"]),
+        "outdated": sorted((o["package"], caret_line(o["latest"]))
+                           for o in report["outdated"]),
         "current": failing(report["legs"].get("current")),
         "major": failing(report["legs"].get("major")),
     }
@@ -318,6 +368,15 @@ def main():
         print(f"error: {pkg_dir}/pubspec.yaml not found", file=sys.stderr)
         return 2
 
+    try:
+        return check(repo, opts)
+    except ToolingError as exc:
+        print(f"error: no trustworthy report for {opts.package}: {exc}",
+              file=sys.stderr)
+        return 4
+
+
+def check(repo, opts):
     # `pub outdated` needs a resolution; do it on scratch too, so the checkout
     # is left exactly as found.
     scratch = tempfile.mkdtemp(prefix=f"outdated-{opts.package}-")
@@ -325,7 +384,7 @@ def main():
         shutil.copytree(os.path.join(repo, "packages"),
                         os.path.join(scratch, "packages"), ignore=COPY_IGNORE)
         sdir = os.path.join(scratch, "packages", opts.package)
-        ok, out = run(["flutter", "pub", "get"], sdir)
+        ok, out = resolve(["flutter", "pub", "get"], sdir)
         rows, out2 = outdated(sdir) if ok else (None, out)
     finally:
         shutil.rmtree(scratch, ignore_errors=True)

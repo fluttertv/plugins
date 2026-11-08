@@ -270,8 +270,12 @@ OIDC; nothing to store as a secret).
   version by hand with `flutter pub publish`, then enable automated publishing
   for it on pub.dev (tag pattern `<package>-v{{version}}`, `push` and
   `workflow_dispatch` events, environment `pub.dev`).
-- To retry a failed publish, run **Release** from the Actions tab. It
-  re-dispatches publishing for any tagged version that pub.dev doesn't have yet.
+- To retry a failed publish, run **Release** from the Actions tab on `main`.
+  It re-dispatches publishing for a tagged version that pub.dev doesn't have
+  yet, as long as the tag points at the tip of `main` and no Publish run for
+  it is still active. If `main` has moved on since the tag, bump the version
+  instead (or delete the tag if that publish never happened).
+- **Publish** only publishes a tag whose commit is on `main`.
 
 The **Upstream compatibility** workflow runs daily. It tests every package
 against the newest upstream releases and the newest Flutter stable, and keeps

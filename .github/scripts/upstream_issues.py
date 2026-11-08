@@ -9,14 +9,18 @@ becoming daily noise:
   finding, no open issue           open one
   finding, open issue, same print  leave it alone — no edit, no comment
   finding, open issue, new print   rewrite the body, add a one-line comment
-  finding, closed issue, same print
+  finding, hand-closed issue, same print
                                    leave it closed: a maintainer closed it
                                    knowing about exactly this finding
-  ok, open issue                   comment that it passes again, close it
+  ok, open issue                   mark the body auto-closed, comment that it
+                                   passes again, close it
 
 A finding that changes after a maintainer closed the issue (a newer upstream
 major, a different failing step) opens a fresh issue, because the closing
-decision was about something else.
+decision was about something else. An issue this script closed itself never
+silences anything: the same finding coming back later is a new regression, so
+it opens a fresh issue. The AUTO_CLOSED marker in the body is how the two kinds
+of closed issue are told apart.
 
 Usage:
     upstream_issues.py <reports-dir> --repo owner/name [--dry-run]
@@ -35,6 +39,7 @@ LABEL = "upstream-compat"
 LABEL_COLOR = "fbca04"
 LABEL_DESC = "A newer upstream package or Flutter stable breaks or excludes a plugin"
 MARKER = re.compile(r"<!-- upstream-compat:fingerprint=([0-9a-f]+) -->")
+AUTO_CLOSED = "<!-- upstream-compat:auto-closed -->"
 BODY_LIMIT = 60000  # GitHub rejects issue bodies over 65536 characters.
 
 HEADLINES = {
@@ -135,6 +140,10 @@ def print_of(issue):
     return match.group(1) if match else None
 
 
+def auto_closed(issue):
+    return AUTO_CLOSED in ((issue or {}).get("body") or "")
+
+
 def sync(repo, report, dry_run):
     pkg, status = report["package"], report["status"]
     open_, closed = existing(repo, pkg)
@@ -142,6 +151,9 @@ def sync(repo, report, dry_run):
         if open_:
             print(f"{pkg}: passing again — closing #{open_['number']}")
             if not dry_run:
+                body = (open_.get("body") or "").replace(AUTO_CLOSED, "").rstrip()
+                gh(["issue", "edit", str(open_["number"]), "--repo", repo,
+                    "--body-file", "-"], input_text=f"{body}\n{AUTO_CLOSED}")
                 gh(["issue", "close", str(open_["number"]), "--repo", repo,
                     "--comment", "Passes again against the newest upstream "
                     f"releases and Flutter stable ({report.get('run_url') or 'scheduled run'}). "
@@ -153,6 +165,15 @@ def sync(repo, report, dry_run):
     fp = report["fingerprint"]
     if open_:
         if print_of(open_) == fp:
+            if auto_closed(open_):
+                # Reopened by hand after an auto-close: drop the marker so that
+                # closing it by hand again does silence this finding.
+                print(f"{pkg}: {status}, unchanged — clearing the auto-closed "
+                      f"marker on reopened #{open_['number']}")
+                if not dry_run:
+                    gh(["issue", "edit", str(open_["number"]), "--repo", repo,
+                        "--body-file", "-"], input_text=body)
+                return
             print(f"{pkg}: {status}, unchanged — #{open_['number']} left alone")
             return
         print(f"{pkg}: {status}, finding changed — updating #{open_['number']}")
@@ -162,8 +183,9 @@ def sync(repo, report, dry_run):
             gh(["issue", "comment", str(open_["number"]), "--repo", repo, "--body",
                 f"Finding changed (now `{status}`); the description is updated."])
         return
-    if closed and print_of(closed) == fp:
-        print(f"{pkg}: {status}, same finding as closed #{closed['number']} — not reopening")
+    if closed and print_of(closed) == fp and not auto_closed(closed):
+        print(f"{pkg}: {status}, same finding as hand-closed "
+              f"#{closed['number']} — not reopening")
         return
     print(f"{pkg}: {status} — opening an issue")
     if dry_run:
