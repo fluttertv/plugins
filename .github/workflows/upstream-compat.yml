@@ -104,7 +104,8 @@ jobs:
       - name: Check against newest upstream
         env:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: python3 .github/scripts/upstream_check.py . "${{ matrix.package }}" --out reports
+          PACKAGE: ${{ matrix.package }}
+        run: python3 .github/scripts/upstream_check.py . "$PACKAGE" --out reports
 
       - uses: actions/upload-artifact@v4
         with:
@@ -136,7 +137,7 @@ jobs:
         run: |
           set -euo pipefail
           # shellcheck disable=SC2086 # DRY_RUN is empty or one flag
-          python3 .github/scripts/upstream_issues.py reports --repo "${{ github.repository }}" $DRY_RUN
+          python3 .github/scripts/upstream_issues.py reports --repo "$GITHUB_REPOSITORY" $DRY_RUN
       - name: Summary
         run: |
           {

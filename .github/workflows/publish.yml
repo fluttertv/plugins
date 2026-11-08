@@ -34,22 +34,24 @@ jobs:
     outputs:
       package: ${{ steps.parse.outputs.package }}
       version: ${{ steps.parse.outputs.version }}
+      publish: ${{ steps.pubdev.outputs.publish }}
     steps:
+      # Full history so the ancestor check below sees all of main.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
       - name: Ensure PyYAML
         run: python3 -c "import yaml" 2>/dev/null || pip install --quiet pyyaml
       - name: Tagged commit is on main
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          # identical: main is this commit; behind: main has it as an ancestor.
-          state=$(gh api "repos/$GITHUB_REPOSITORY/compare/main...$GITHUB_SHA" --jq .status)
-          case "$state" in
-            identical|behind) echo "$GITHUB_SHA is on main ($state)." ;;
-            *) echo "::error::$GITHUB_REF_NAME points at $GITHUB_SHA, which is not on main ($state). Only merged commits are published."
-               exit 1 ;;
-          esac
+          git fetch --quiet origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" FETCH_HEAD; then
+            echo "::error::$GITHUB_REF_NAME points at $GITHUB_SHA, which is not on main. Only merged commits are published."
+            exit 1
+          fi
+          echo "$GITHUB_SHA is on main."
       - id: parse
         env:
           REF_TYPE: ${{ github.ref_type }}
@@ -81,20 +83,45 @@ jobs:
               sys.exit(f"::error::Newest CHANGELOG heading is '{heading}', not {version}.")
           with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
               fh.write(f"package={pkg}\nversion={version}\n")
-          print(f"Publishing {pkg} {version}")
+          print(f"Tag agrees with packages/{pkg}: {version}")
           PY
+
+      # A second dispatch, or a re-run after a publish that did go through,
+      # must not turn red at pub.dev's "version already exists".
+      - name: Already on pub.dev?
+        id: pubdev
+        env:
+          PACKAGE: ${{ steps.parse.outputs.package }}
+          VERSION: ${{ steps.parse.outputs.version }}
+        run: |
+          set -euo pipefail
+          code=$(curl -sS -o versions.json -w '%{http_code}' \
+            -H 'Accept: application/vnd.pub.v2+json' "https://pub.dev/api/packages/$PACKAGE")
+          if [ "$code" != 200 ]; then
+            echo "::error::pub.dev answered HTTP $code for $PACKAGE; not deciding blind."
+            exit 1
+          fi
+          if jq -e --arg v "$VERSION" 'any(.versions[]; .version == $v)' versions.json >/dev/null; then
+            echo "::notice::$PACKAGE $VERSION is already on pub.dev; nothing to publish."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
 
   publish:
     name: ${{ needs.resolve.outputs.package }} ${{ needs.resolve.outputs.version }}
     needs: resolve
+    if: needs.resolve.outputs.publish == 'true'
     permissions:
       id-token: write # OIDC token for pub.dev
     # dart-lang's reusable workflow: one job in `environment` that checks out
     # the tag, installs Dart and the newest Flutter stable (not CI's pinned
     # version; Release's dry-run used the pinned one), then runs `pub get`,
     # `pub publish --dry-run` and `pub publish -f` with the OIDC token. Its
-    # only inputs are `environment` and `working-directory`.
-    uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
+    # only inputs are `environment` and `working-directory`, so the Flutter
+    # version cannot be pinned to CI's FLUTTER_VERSION here.
+    # Pinned to the commit `v1` pointed at on 2026-11-08; bump deliberately.
+    uses: dart-lang/setup-dart/.github/workflows/publish.yml@6afc89df92d6eb3834022f73cd65adc8cdfcb92d # v1
     with:
       environment: pub.dev
       working-directory: packages/${{ needs.resolve.outputs.package }}

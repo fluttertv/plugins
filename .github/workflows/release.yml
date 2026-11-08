@@ -60,11 +60,14 @@ jobs:
       flutter: ${{ steps.flutter.outputs.version }}
     steps:
       - id: sha
-        run: echo "sha=${{ github.event.workflow_run.head_sha || github.sha }}" >> "$GITHUB_OUTPUT"
+        env:
+          SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: echo "sha=$SHA" >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@v4
         with:
           ref: ${{ steps.sha.outputs.sha }}
+          persist-credentials: false # public repo: fetch and ls-remote need none
 
       # Only ever release what main points at. A workflow_run for an older
       # commit can arrive after a newer one has landed; its packages will be
@@ -72,10 +75,12 @@ jobs:
       # A dispatch is on main already (see the job's `if`); checking it too
       # costs nothing and catches a push that landed while it queued.
       - name: Commit is still on main
+        env:
+          SHA: ${{ steps.sha.outputs.sha }}
         run: |
           git fetch --depth=1 origin main
-          if [ "$(git rev-parse FETCH_HEAD)" != "${{ steps.sha.outputs.sha }}" ]; then
-            echo "::notice::main has moved past ${{ steps.sha.outputs.sha }}; the newer run releases."
+          if [ "$(git rev-parse FETCH_HEAD)" != "$SHA" ]; then
+            echo "::notice::main has moved past $SHA; the newer run releases."
             echo "SKIP=1" >> "$GITHUB_ENV"
           fi
 
@@ -98,14 +103,17 @@ jobs:
           fi
           python3 .github/scripts/release_plan.py . --github-output
 
-  release:
-    name: ${{ matrix.package }} ${{ matrix.version }}
+  # Runs third-party code (pub get resolves without a lockfile; tests run it),
+  # so it gets nothing it could abuse: a read-only token, no credentials left
+  # in .git/config, and no shared Flutter/pub cache that the upstream-compat
+  # runs (which resolve the newest upstream majors) could have populated.
+  verify:
+    name: verify ${{ matrix.package }} ${{ matrix.version }}
     needs: plan
     if: needs.plan.outputs.candidates != '[]' && needs.plan.outputs.candidates != ''
     runs-on: ubuntu-latest
     permissions:
-      contents: write # create the tag
-      actions: write # dispatch publish.yml
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -114,59 +122,30 @@ jobs:
       run:
         working-directory: packages/${{ matrix.package }}
     steps:
-      # An existing tag: publish only what this run verifies, and never start
-      # a second Publish for a tag whose first one is still going.
-      - name: Tag state
-        id: state
-        if: ${{ matrix.tag_exists }}
-        working-directory: .
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ matrix.tag }}
-          TAG_SHA: ${{ matrix.tag_sha }}
-          SHA: ${{ needs.plan.outputs.sha }}
-        run: |
-          set -euo pipefail
-          active=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow publish.yml \
-            --branch "$TAG" --limit 20 --json status \
-            --jq '[.[] | select(.status != "completed")] | length')
-          if [ "$active" != 0 ]; then
-            echo "::notice::A Publish run for $TAG is still active (running or awaiting approval); not dispatching another."
-            echo "skip=1" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          if [ "$TAG_SHA" != "$SHA" ]; then
-            echo "::error::$TAG points at $TAG_SHA, not $SHA, and pub.dev does not have it. Publishing it would ship a commit this run did not verify. Bump the version, or delete the tag if that publish never happened."
-            exit 1
-          fi
-
       - uses: actions/checkout@v4
-        if: steps.state.outputs.skip != '1'
         with:
           ref: ${{ needs.plan.outputs.sha }}
+          persist-credentials: false
 
       - uses: subosito/flutter-action@v2
-        if: steps.state.outputs.skip != '1'
         with:
           flutter-version: ${{ needs.plan.outputs.flutter }}
           channel: stable
-          cache: true
+          cache: false
 
       - name: flutter pub get
-        if: steps.state.outputs.skip != '1'
         run: flutter pub get
 
       # Same checks as CI's package job. CI already passed on this commit;
       # repeating the package's own half costs a minute and means the tag is
-      # placed by a job that saw the checks pass, not one that trusted a status.
+      # placed after a job that saw the checks pass, not one that trusted a
+      # status.
       - name: dart analyze
-        if: steps.state.outputs.skip != '1'
         run: |
           dart analyze lib
           if [ -d test ]; then dart analyze test; fi
 
       - name: flutter test
-        if: steps.state.outputs.skip != '1'
         run: |
           if find test -name '*_test.dart' -print -quit 2>/dev/null | grep -q .; then
             flutter test
@@ -177,34 +156,114 @@ jobs:
       # Exits non-zero on warnings; hints (such as the pubspec_overrides one
       # the firebase packages get) do not fail it.
       - name: flutter pub publish --dry-run
-        if: steps.state.outputs.skip != '1'
         run: flutter pub publish --dry-run
+
+      # Matrix legs cannot pass outputs to another matrix, and `needs` is all
+      # or nothing. A marker per verified package lets `tag` release the
+      # packages that passed even when another one in the same merge failed.
+      - name: Record verification
+        working-directory: .
+        env:
+          SHA: ${{ needs.plan.outputs.sha }}
+          PACKAGE: ${{ matrix.package }}
+        run: |
+          mkdir -p verified
+          printf '%s\n' "$SHA" > "verified/$PACKAGE"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verified-${{ matrix.package }}
+          path: verified/
+          retention-days: 1
+
+  # Holds the write permissions and runs no package code: no checkout, no pub,
+  # only gh calls on the plan's metadata.
+  tag:
+    name: tag ${{ matrix.package }} ${{ matrix.version }}
+    needs: [plan, verify]
+    if: ${{ !cancelled() && needs.verify.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the tag
+      actions: write # dispatch publish.yml, list its runs
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.candidates) }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: verified-${{ matrix.package }}
+          path: verified
+        continue-on-error: true # absent when this package's verify failed
+
+      - name: Verified on this commit
+        env:
+          SHA: ${{ needs.plan.outputs.sha }}
+          PACKAGE: ${{ matrix.package }}
+        run: |
+          if [ "$(cat "verified/$PACKAGE" 2>/dev/null)" != "$SHA" ]; then
+            echo "::error::$PACKAGE was not verified on $SHA (see its verify job); not tagging or publishing it."
+            exit 1
+          fi
+
+      # Publish only what this run verified, and never start a second Publish
+      # for a tag whose first one is still going (running, or waiting for
+      # approval in the pub.dev environment).
+      - name: Tag state
+        id: state
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ matrix.tag }}
+          TAG_EXISTS: ${{ matrix.tag_exists }}
+          TAG_SHA: ${{ matrix.tag_sha }}
+          SHA: ${{ needs.plan.outputs.sha }}
+        run: |
+          set -euo pipefail
+          if [ "$TAG_EXISTS" = true ]; then
+            active=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow publish.yml \
+              --branch "$TAG" --limit 20 --json status \
+              --jq '[.[] | select(.status != "completed")] | length')
+            if [ "$active" != 0 ]; then
+              echo "::notice::A Publish run for $TAG is still active (queued, running or awaiting approval); not dispatching another."
+              echo "skip=1" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            if [ "$TAG_SHA" != "$SHA" ]; then
+              echo "::error::$TAG points at $TAG_SHA, not $SHA, and pub.dev does not have it. Publishing it would ship a commit this run did not verify. Bump the version, or delete the tag if that publish never happened."
+              exit 1
+            fi
+          fi
 
       - name: Tag ${{ matrix.tag }}
         if: ${{ !matrix.tag_exists }}
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ matrix.tag }}
+          SHA: ${{ needs.plan.outputs.sha }}
         run: |
-          gh api "repos/${{ github.repository }}/git/refs" \
-            -f ref="refs/tags/${{ matrix.tag }}" \
-            -f sha="${{ needs.plan.outputs.sha }}"
+          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$TAG" -f sha="$SHA"
 
       - name: Dispatch publish on ${{ matrix.tag }}
         if: steps.state.outputs.skip != '1'
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ matrix.tag }}
+          PACKAGE: ${{ matrix.package }}
+          VERSION: ${{ matrix.version }}
         run: |
-          gh workflow run publish.yml --repo "${{ github.repository }}" --ref "${{ matrix.tag }}"
-          echo "Publishing ${{ matrix.package }} ${{ matrix.version }} — follow it under the Publish workflow." >> "$GITHUB_STEP_SUMMARY"
+          gh workflow run publish.yml --repo "$GITHUB_REPOSITORY" --ref "$TAG"
+          echo "Publishing $PACKAGE $VERSION — follow it under the Publish workflow." >> "$GITHUB_STEP_SUMMARY"
 
   # Packages whose metadata release_plan.py rejected (version not on top of
   # CHANGELOG.md, not newer than pub.dev, ...). Kept out of `plan` so the
   # healthy packages in the same merge still release, but the run ends red.
   problems:
-    needs: [plan, release]
+    needs: [plan, tag]
     if: ${{ !cancelled() && needs.plan.result == 'success' && needs.plan.outputs.problems != '0' }}
     runs-on: ubuntu-latest
     steps:
-      - run: |
-          echo "::error::${{ needs.plan.outputs.problems }} package(s) were not released; see the plan job's errors."
+      - env:
+          PROBLEMS: ${{ needs.plan.outputs.problems }}
+        run: |
+          echo "::error::$PROBLEMS package(s) were not released; see the plan job's errors."
           exit 1

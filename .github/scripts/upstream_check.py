@@ -50,8 +50,6 @@ from check_repo import load_yaml  # noqa: E402
 LOG_TAIL = 80
 STEP_TIMEOUT = 20 * 60
 
-# Ignored when copying packages/ to scratch: build output and resolution state
-# that would make a scratch run differ from a fresh checkout.
 # pub's own wording when it could not talk to the package server. A resolve
 # step that fails with one of these says nothing about our package.
 NETWORK_ERROR = re.compile(
@@ -68,37 +66,52 @@ class ToolingError(Exception):
     """The run cannot produce a trustworthy report (network, pub.dev down)."""
 
 
+# Ignored when copying packages/ to scratch: build output and resolution state
+# that would make a scratch run differ from a fresh checkout.
 COPY_IGNORE = shutil.ignore_patterns(
     ".dart_tool", "build", "pubspec.lock", ".flutter-plugins",
     ".flutter-plugins-dependencies", "Pods", ".symlinks", "DerivedData",
 )
 
 
-def run(cmd, cwd):
-    """(ok, combined output). Never raises for a failing command."""
+def run_rc(cmd, cwd):
+    """(exit code, combined output); the code is None when the command timed
+    out or could not start. Never raises for a failing command."""
     try:
         proc = subprocess.run(
             cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             text=True, timeout=STEP_TIMEOUT,
         )
-        return proc.returncode == 0, proc.stdout
+        return proc.returncode, proc.stdout
     except subprocess.TimeoutExpired as exc:
         out = exc.stdout or ""
         if isinstance(out, bytes):
             out = out.decode("utf-8", "replace")
-        return False, out + f"\n[timed out after {STEP_TIMEOUT}s]"
+        return None, out + f"\n[timed out after {STEP_TIMEOUT}s]"
     except OSError as exc:
-        return False, f"[could not run {cmd[0]}: {exc}]"
+        return None, f"[could not run {cmd[0]}: {exc}]"
+
+
+def run(cmd, cwd):
+    """(ok, combined output). Never raises for a failing command."""
+    code, out = run_rc(cmd, cwd)
+    return code == 0, out
+
+
+# pub's exit code for "the package server could not be reached" (EX_UNAVAILABLE).
+EXIT_UNAVAILABLE = 69
 
 
 def resolve(cmd, cwd):
     """run() for a pub command that talks to the package server. A failure
-    caused by the network raises ToolingError instead of becoming a step."""
-    ok, out = run(cmd, cwd)
-    if not ok and NETWORK_ERROR.search(out):
-        raise ToolingError(f"{' '.join(cmd)} in {cwd} hit a network error:\n"
-                           + tail(out, 20))
-    return ok, out
+    caused by the network raises ToolingError instead of becoming a step:
+    exit code 69 is pub saying so outright, and the wording check catches the
+    paths (flutter's wrapper, older pubs) that exit 1 for the same cause."""
+    code, out = run_rc(cmd, cwd)
+    if code != 0 and (code == EXIT_UNAVAILABLE or NETWORK_ERROR.search(out)):
+        raise ToolingError(f"{' '.join(cmd)} in {cwd} could not reach the "
+                           f"package server (exit {code}):\n" + tail(out, 20))
+    return code == 0, out
 
 
 def tail(text, n=LOG_TAIL):
@@ -136,15 +149,11 @@ def hosted_deps(pubspec_path, section="dependencies"):
 
 
 def outdated(pkg_dir):
-    """Direct hosted deps whose newest release lies outside the constraint.
+    """Direct hosted deps whose newest release our own constraint excludes.
 
-    `pub outdated` already knows the difference: `upgradable` is the newest
-    version the current constraints allow, `latest` the newest stable release.
-    When they differ by a major (a minor below 1.0.0) for a direct
-    dependency, a constraint is what holds us back — ours, or a sibling's.
-    A newer release on the same line that pub could not pick (an SDK bound, a
-    transitive pin) is the current leg's business, not a new major, so it is
-    not a row. Prereleases are not counted — `latest` excludes them by default.
+    `pub outdated` supplies `latest`, the newest stable release (prereleases
+    are not counted). A row needs our declared constraint to exclude it — see
+    excludes() for why `upgradable != latest` is not the test.
     """
     ok, out = resolve(["flutter", "pub", "outdated", "--json",
                        "--no-dev-dependencies"], pkg_dir)
@@ -163,8 +172,7 @@ def outdated(pkg_dir):
             continue
         upgradable = (row.get("upgradable") or {}).get("version")
         latest = (row.get("latest") or {}).get("version")
-        if latest and upgradable != latest and not (
-                upgradable and same_line(upgradable, latest)):
+        if latest and excludes(wanted[name], latest):
             rows.append({"package": name, "constraint": wanted[name],
                          "upgradable": upgradable, "latest": latest})
     return rows, out
@@ -223,6 +231,61 @@ def example_checks(example_dir, steps, major):
     ok, out = run(["dart", "analyze", "lib"], example_dir)
     steps.append({"name": "example: dart analyze lib", "ok": ok, "log": tail(out)})
     return ok
+
+
+VERSION = re.compile(r"^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?$")
+BOUND = re.compile(r"(>=|<=|>|<)\s*([0-9][0-9A-Za-z.+-]*)")
+
+
+def version_key(text):
+    """Comparable key for a pub version, or None. A prerelease sorts below
+    its release; build metadata does not matter for constraint checks."""
+    m = VERSION.match(text.strip())
+    if not m:
+        return None
+    major, minor, patch, pre = m.groups()
+    return (int(major), int(minor), int(patch), 0 if pre else 1, pre or "")
+
+
+def excludes(constraint, version):
+    """True when our declared `constraint` does not allow `version`.
+
+    This, not `upgradable != latest`, is the test for "a constraint of ours
+    holds us back". `pub outdated` also reports a dependency as not
+    upgradable to latest when the SDK pins it (meta, collection) or another
+    package caps it, and those are not ours to widen — the current leg already
+    tests whatever pub can resolve. Handles what pubspecs here use: any,
+    ^x.y.z, exact versions and >=/>/</<= ranges. A form it cannot read counts
+    as excluding, so an odd constraint gets looked at rather than ignored.
+    """
+    want = version_key(version)
+    if want is None:
+        return False
+    c = (constraint or "any").strip().strip("'\"")
+    if c == "any":
+        return False
+    if c.startswith("^"):
+        low = version_key(c[1:])
+        if low is None:
+            return True
+        high = (low[0] + 1, 0, 0, 0, "") if low[0] > 0 else \
+            (0, low[1] + 1, 0, 0, "")
+        return not (low <= want < high)
+    exact = version_key(c)
+    if exact is not None:
+        return exact[:3] != want[:3]
+    bounds = BOUND.findall(c)
+    if not bounds or BOUND.sub("", c).strip():
+        return True
+    for op, text in bounds:
+        key = version_key(text)
+        if key is None:
+            return True
+        ok = {">=": want >= key, ">": want > key,
+              "<=": want <= key, "<": want < key}[op]
+        if not ok:
+            return True
+    return False
 
 
 def same_line(resolved, latest):
