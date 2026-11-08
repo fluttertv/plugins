@@ -252,6 +252,36 @@ git push
 Make sure your git identity is set to your personal profile, not a CI
 bot. CI will run `flutter pub get` + `flutter analyze` on the new package.
 
+## 7. Releasing
+
+Releases go out from `main` on their own. To release a package, bump
+`version:` in its `pubspec.yaml` (and `s.version` in the podspec) and add a
+matching `## <version>` heading at the top of `CHANGELOG.md`, in the same PR.
+After the merge, once CI is green on `main`, the **Release** workflow
+re-checks the package, tags the commit `<package>-v<version>` and dispatches
+**Publish**, which uploads to pub.dev through automated publishing (GitHub
+OIDC; nothing to store as a secret).
+
+- A version already on pub.dev is skipped, so packages you didn't bump are
+  left alone.
+- A version that doesn't top `CHANGELOG.md`, or isn't newer than what pub.dev
+  has, fails the Release run and isn't published.
+- A brand-new package can't be published automatically. Publish its first
+  version by hand with `flutter pub publish`, then enable automated publishing
+  for it on pub.dev (tag pattern `<package>-v{{version}}`, `push` and
+  `workflow_dispatch` events, environment `pub.dev`).
+- To retry a failed publish, run **Release** from the Actions tab on `main`.
+  It re-dispatches publishing for a tagged version that pub.dev doesn't have
+  yet, as long as the tag points at the tip of `main` and no Publish run for
+  it is still active. If `main` has moved on since the tag, bump the version
+  instead (or delete the tag if that publish never happened).
+- **Publish** only publishes a tag whose commit is on `main`.
+
+The **Upstream compatibility** workflow runs daily. It tests every package
+against the newest upstream releases and the newest Flutter stable, and keeps
+one `upstream-compat` issue per package that is broken or held back by its
+constraints. That issue is closed automatically once the package passes again.
+
 ---
 
 ## Checklist (use this when porting)

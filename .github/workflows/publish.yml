@@ -1,0 +1,127 @@
+name: Publish
+
+# Publishes one package to pub.dev from a `<package>-v<version>` tag, using
+# pub.dev automated publishing (GitHub OIDC — no stored credentials).
+#
+# Normally dispatched by release.yml on the tag it just created. Pushing such a
+# tag by hand also works. Either way pub.dev itself checks that the event came
+# from this repository, from a tag matching the package's configured pattern
+# `<package>-v{{version}}`, and from the `pub.dev` environment.
+#
+# The `resolve` job is a guard, not the security boundary: it refuses a tag
+# whose name does not agree with the package's pubspec and changelog, so a
+# mistyped tag fails here with a sentence instead of at pub.dev with a 403.
+# It also refuses a tag on a commit that is not on main: the tag patterns on
+# pub.dev and in the environment limit the tag's *name*, not which commit it
+# points at, and only main has been through review and CI.
+
+on:
+  push:
+    tags:
+      - "*_tvos-v[0-9]+.[0-9]+.[0-9]+*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    outputs:
+      package: ${{ steps.parse.outputs.package }}
+      version: ${{ steps.parse.outputs.version }}
+      publish: ${{ steps.pubdev.outputs.publish }}
+    steps:
+      # Full history so the ancestor check below sees all of main.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Ensure PyYAML
+        run: python3 -c "import yaml" 2>/dev/null || pip install --quiet pyyaml
+      - name: Tagged commit is on main
+        run: |
+          set -euo pipefail
+          git fetch --quiet origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" FETCH_HEAD; then
+            echo "::error::$GITHUB_REF_NAME points at $GITHUB_SHA, which is not on main. Only merged commits are published."
+            exit 1
+          fi
+          echo "$GITHUB_SHA is on main."
+      - id: parse
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [ "$REF_TYPE" != tag ]; then
+            echo "::error::Publish must run on a tag ref (got $REF_TYPE '$TAG'). Dispatch it with --ref <package>-v<version>."
+            exit 1
+          fi
+          python3 - <<'PY'
+          import os, re, sys
+          sys.path.insert(0, ".github/scripts")
+          from check_repo import load_yaml, newest_changelog_version, read_text
+          tag = os.environ["TAG"]
+          m = re.fullmatch(r"([a-z0-9_]+)-v(.+)", tag)
+          if not m:
+              sys.exit(f"::error::Tag '{tag}' is not <package>-v<version>.")
+          pkg, version = m.groups()
+          d = os.path.join("packages", pkg)
+          pubspec, err = load_yaml(os.path.join(d, "pubspec.yaml"))
+          if err or not isinstance(pubspec, dict):
+              sys.exit(f"::error::No readable packages/{pkg}/pubspec.yaml ({err}).")
+          if pubspec.get("version") != version:
+              sys.exit(f"::error::Tag says {version}, pubspec.yaml says {pubspec.get('version')}.")
+          text, _ = read_text(os.path.join(d, "CHANGELOG.md"))
+          top, heading = newest_changelog_version(text or "")
+          if top != version:
+              sys.exit(f"::error::Newest CHANGELOG heading is '{heading}', not {version}.")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
+              fh.write(f"package={pkg}\nversion={version}\n")
+          print(f"Tag agrees with packages/{pkg}: {version}")
+          PY
+
+      # A second dispatch, or a re-run after a publish that did go through,
+      # must not turn red at pub.dev's "version already exists".
+      - name: Already on pub.dev?
+        id: pubdev
+        env:
+          PACKAGE: ${{ steps.parse.outputs.package }}
+          VERSION: ${{ steps.parse.outputs.version }}
+        run: |
+          set -euo pipefail
+          code=$(curl -sS -o versions.json -w '%{http_code}' \
+            -H 'Accept: application/vnd.pub.v2+json' "https://pub.dev/api/packages/$PACKAGE")
+          if [ "$code" != 200 ]; then
+            echo "::error::pub.dev answered HTTP $code for $PACKAGE; not deciding blind."
+            exit 1
+          fi
+          if jq -e --arg v "$VERSION" 'any(.versions[]; .version == $v)' versions.json >/dev/null; then
+            echo "::notice::$PACKAGE $VERSION is already on pub.dev; nothing to publish."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  publish:
+    name: ${{ needs.resolve.outputs.package }} ${{ needs.resolve.outputs.version }}
+    needs: resolve
+    if: needs.resolve.outputs.publish == 'true'
+    permissions:
+      id-token: write # OIDC token for pub.dev
+    # dart-lang's reusable workflow: one job in `environment` that checks out
+    # the tag, installs Dart and the newest Flutter stable (not CI's pinned
+    # version; Release's dry-run used the pinned one), then runs `pub get`,
+    # `pub publish --dry-run` and `pub publish -f` with the OIDC token. Its
+    # only inputs are `environment` and `working-directory`, so the Flutter
+    # version cannot be pinned to CI's FLUTTER_VERSION here.
+    # Pinned to the commit `v1` pointed at on 2026-11-08; bump deliberately.
+    uses: dart-lang/setup-dart/.github/workflows/publish.yml@6afc89df92d6eb3834022f73cd65adc8cdfcb92d # v1
+    with:
+      environment: pub.dev
+      working-directory: packages/${{ needs.resolve.outputs.package }}
