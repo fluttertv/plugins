@@ -1,8 +1,9 @@
-# Local development override. firebase_core_tvos is not yet on pub.dev, so
-# resolve it from the sibling package in this monorepo for `flutter pub get`,
-# `flutter test`, and `flutter analyze`. Gitignored and excluded from the
-# published package — the pubspec.yaml hosted `firebase_core_tvos: ^0.0.1`
-# constraint is what consumers get. Becomes a no-op once it is published.
+# Resolves firebase_core_tvos from the sibling package in this monorepo, so the
+# repo's CI (`flutter pub get`, `dart analyze`) resolves this package against
+# the in-repo firebase_core_tvos 0.0.4 until that version is on pub.dev. Delete
+# this file once firebase_core_tvos 0.0.4 is published. `dart pub publish`
+# leaves it out of the archive, so consumers get the hosted constraint from
+# pubspec.yaml.
 dependency_overrides:
   firebase_core_tvos:
     path: ../firebase_core_tvos

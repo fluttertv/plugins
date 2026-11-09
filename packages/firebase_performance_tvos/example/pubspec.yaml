@@ -18,13 +18,6 @@ dependencies:
   flutter:
     sdk: flutter
 
-# This plugin requires firebase_core_tvos ^0.0.4 (the first with a
-# tvos/Package.swift). Resolve it from the sibling package so the example
-# builds before that version is on pub.dev, and builds what this repo has.
-dependency_overrides:
-  firebase_core_tvos:
-    path: ../../firebase_core_tvos
-
 dev_dependencies:
   flutter_lints: ^4.0.0
   flutter_test:

@@ -32,6 +32,8 @@ let package = Package(
       dependencies: [
         // The podspec's Firebase/AppCheck subspec.
         .product(name: "FirebaseAppCheck", package: "firebase-ios-sdk"),
+        // FirebaseAppCheckPlugin.swift imports FirebaseCore directly.
+        .product(name: "FirebaseCore", package: "firebase-ios-sdk"),
         .product(name: "firebase-core-tvos", package: "firebase_core_tvos"),
         .product(name: "FlutterFramework", package: "FlutterFramework"),
       ],

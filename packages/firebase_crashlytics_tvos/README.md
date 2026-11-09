@@ -56,6 +56,10 @@ the Podfile. No manual setup is needed. It depends on `firebase_core_tvos`
 0.0.4, which ships one too, and takes firebase-ios-sdk `~> 12.15.0`, as in the
 podspec.
 
+Needs flutter-tvos 1.3.0 or later, the first release that links plugins through
+SwiftPM, places them side by side (so `../firebase_core_tvos` and
+`../FlutterFramework` resolve) and leaves them out of the Podfile.
+
 ## License
 
 fluttertv under a BSD-3-Clause license. See `LICENSE` for the full text.

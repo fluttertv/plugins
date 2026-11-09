@@ -52,6 +52,10 @@ on this package ships one too, from the version that requires
 `firebase_core_tvos: ^0.0.4`, so they link through SwiftPM together and share
 one firebase-ios-sdk (`~> 12.15.0`, as in the podspecs).
 
+Needs flutter-tvos 1.3.0 or later, the first release that links plugins through
+SwiftPM, places them side by side (so `../firebase_core_tvos` and
+`../FlutterFramework` resolve) and leaves them out of the Podfile.
+
 ## License
 
 fluttertv, under a BSD-3-Clause license. See `LICENSE` for the full text.
