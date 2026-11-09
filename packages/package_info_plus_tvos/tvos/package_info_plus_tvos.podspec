@@ -6,7 +6,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'package_info_plus_tvos'
-  s.version          = '0.0.1'
+  s.version          = '0.0.2'
   s.summary          = 'tvOS implementation of package_info_plus.'
   s.description      = <<-DESC
 tvOS implementation of package_info_plus, the federated platform

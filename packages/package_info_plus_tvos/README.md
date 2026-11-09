@@ -10,7 +10,7 @@ for [flutter-tvos](https://github.com/fluttertv/flutter-tvos).
 ```yaml
 dependencies:
   package_info_plus: ^10.x
-  package_info_plus_tvos: ^0.0.1
+  package_info_plus_tvos: ^0.0.2
 ```
 
 ## tvOS support
@@ -28,3 +28,10 @@ dependencies:
 - None for core fields.
 
 See `PORTING_REPORT.md` for the port detail and checklist.
+
+## Dependency management
+
+This package ships a `tvos/Package.swift`. `flutter-tvos` links any plugin
+that has one through **Swift Package Manager** and leaves it out of the
+Podfile, so the podspec is only read by tools that do not know about SwiftPM.
+No manual setup needed.
