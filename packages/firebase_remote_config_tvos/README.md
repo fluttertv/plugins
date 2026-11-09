@@ -14,9 +14,9 @@ automatically. Apps that already use `firebase_remote_config` and target tvOS ad
 ```yaml
 dependencies:
     firebase_remote_config: ^6.5.3
-    firebase_remote_config_tvos: ^0.0.1
+    firebase_remote_config_tvos: ^0.0.2
     firebase_core: ^4.11.0
-    firebase_core_tvos: ^0.0.1 # tvOS core (this package depends on it)
+    firebase_core_tvos: ^0.0.4 # tvOS core (this package depends on it)
 ```
 
 > **Version alignment matters.** This package's native code matches the
@@ -40,6 +40,18 @@ and real-time config updates.
 > directory (not Application Support as on iOS), so the system may discard the
 > last-activated config under disk pressure. Set in-app defaults and don't rely
 > on a previously-activated value persisting across launches.
+
+## Swift Package Manager
+
+This package ships a `tvos/Package.swift`. flutter-tvos links a plugin that
+ships `tvos/Package.swift` through Swift Package Manager and leaves it out of
+the Podfile. No manual setup is needed. It depends on `firebase_core_tvos`
+0.0.4, which ships one too, and takes firebase-ios-sdk `~> 12.15.0`, as in the
+podspec.
+
+Needs flutter-tvos 1.3.0 or later, the first release that links plugins through
+SwiftPM, places them side by side (so `../firebase_core_tvos` and
+`../FlutterFramework` resolve) and leaves them out of the Podfile.
 
 ## License
 

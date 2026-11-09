@@ -1,0 +1,8 @@
+# Resolves firebase_core_tvos from the sibling package in this monorepo, so the
+# repo's CI (`flutter pub get`, `dart analyze`) resolves this example against
+# the in-repo firebase_core_tvos 0.0.4 until that version is on pub.dev. Delete
+# this file once firebase_core_tvos 0.0.4 is published. The package's
+# .pubignore keeps it out of the published archive.
+dependency_overrides:
+  firebase_core_tvos:
+    path: ../../firebase_core_tvos

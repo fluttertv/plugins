@@ -9,6 +9,8 @@
 // pod (which has no tvOS platform declaration) — see PORTING_REPORT.md.
 #if __has_include(<firebase_core_tvos/FLTFirebasePluginRegistry.h>)
 #import <firebase_core_tvos/FLTFirebasePluginRegistry.h>
+#elif __has_include(<firebase_core/FLTFirebasePluginRegistry.h>)  // SwiftPM
+#import <firebase_core/FLTFirebasePluginRegistry.h>
 #else
 #import "FLTFirebasePluginRegistry.h"
 #endif
@@ -32,6 +34,8 @@
 
 #if __has_include(<firebase_core_tvos/FLTFirebaseCorePlugin.h>)
 #import <firebase_core_tvos/FLTFirebaseCorePlugin.h>
+#elif __has_include(<firebase_core/FLTFirebaseCorePlugin.h>)  // SwiftPM
+#import <firebase_core/FLTFirebaseCorePlugin.h>
 #else
 #import "FLTFirebaseCorePlugin.h"
 #endif

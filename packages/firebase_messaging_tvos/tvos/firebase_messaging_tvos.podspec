@@ -6,7 +6,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'firebase_messaging_tvos'
-  s.version          = '0.0.1'
+  s.version          = '0.0.2'
   s.summary          = 'tvOS implementation of firebase_messaging.'
   s.description      = <<-DESC
 tvOS implementation of firebase_messaging, the federated platform
@@ -39,7 +39,7 @@ package that ships native code targeting Apple tvOS.
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
     'GCC_PREPROCESSOR_DEFINITIONS' =>
-      '$(inherited) LIBRARY_VERSION=\"0.0.1\" LIBRARY_NAME=\"flutter-fire-fcm-tvos\"',
+      '$(inherited) LIBRARY_VERSION=\"0.0.2\" LIBRARY_NAME=\"flutter-fire-fcm-tvos\"',
   }
 
   # The ported Classes/ call into FIRMessaging (Firebase/Messaging) and into

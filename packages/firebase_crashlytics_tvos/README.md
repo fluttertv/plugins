@@ -14,9 +14,9 @@ automatically. Apps that already use `firebase_crashlytics` and target tvOS add:
 ```yaml
 dependencies:
     firebase_crashlytics: ^5.3.0
-    firebase_crashlytics_tvos: ^0.0.2
+    firebase_crashlytics_tvos: ^0.0.3
     firebase_core: ^4.14.0
-    firebase_core_tvos: ^0.0.3 # tvOS core (this package depends on it)
+    firebase_core_tvos: ^0.0.4 # tvOS core (this package depends on it)
 ```
 
 > **Version alignment matters.** This package's native code matches the
@@ -47,6 +47,18 @@ flutter-tvos layout lacks). dSYMs are still produced (the podspec sets
 `dwarf-with-dsym`) — just add a Run Script phase to your app's Runner target that
 runs `"${PODS_ROOT}/FirebaseCrashlytics/run"`. Dart `recordError` reports are
 already symbolicated.
+
+## Swift Package Manager
+
+This package ships a `tvos/Package.swift`. flutter-tvos links a plugin that
+ships `tvos/Package.swift` through Swift Package Manager and leaves it out of
+the Podfile. No manual setup is needed. It depends on `firebase_core_tvos`
+0.0.4, which ships one too, and takes firebase-ios-sdk `~> 12.15.0`, as in the
+podspec.
+
+Needs flutter-tvos 1.3.0 or later, the first release that links plugins through
+SwiftPM, places them side by side (so `../firebase_core_tvos` and
+`../FlutterFramework` resolve) and leaves them out of the Podfile.
 
 ## License
 

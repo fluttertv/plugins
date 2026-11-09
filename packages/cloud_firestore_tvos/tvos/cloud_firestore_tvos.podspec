@@ -6,7 +6,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'cloud_firestore_tvos'
-  s.version          = '0.0.1'
+  s.version          = '0.0.2'
   s.summary          = 'tvOS implementation of cloud_firestore.'
   s.description      = <<-DESC
 tvOS implementation of cloud_firestore, the federated platform
@@ -39,7 +39,7 @@ package that ships native code targeting Apple tvOS.
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
     'GCC_PREPROCESSOR_DEFINITIONS' =>
-      '$(inherited) LIBRARY_VERSION=\"0.0.1\" LIBRARY_NAME=\"flutter-fire-fst-tvos\"',
+      '$(inherited) LIBRARY_VERSION=\"0.0.2\" LIBRARY_NAME=\"flutter-fire-fst-tvos\"',
   }
 
   # The ported Classes/ call into FIRFirestore (Firebase/Firestore) and into
