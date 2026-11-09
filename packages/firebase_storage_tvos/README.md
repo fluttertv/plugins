@@ -16,7 +16,7 @@ alongside it:
 ```yaml
 dependencies:
   firebase_storage: ^13.4.3
-  firebase_storage_tvos: ^0.0.1
+  firebase_storage_tvos: ^0.0.2
 ```
 
 The native plugin registers automatically through flutter-tvos' plugin
@@ -41,6 +41,18 @@ Storage features are disabled here:
 
 - Apple TV running tvOS 15.0 or later (the Firebase Apple SDK's minimum).
 - `firebase_core_tvos` (pulled in automatically).
+
+## Swift Package Manager
+
+This package ships a `tvos/Package.swift`. flutter-tvos links a plugin that
+ships `tvos/Package.swift` through Swift Package Manager and leaves it out of
+the Podfile. No manual setup is needed. It depends on `firebase_core_tvos`
+0.0.4, which ships one too, and takes firebase-ios-sdk `~> 12.15.0`, as in the
+podspec.
+
+Needs flutter-tvos 1.3.0 or later, the first release that links plugins through
+SwiftPM, places them side by side (so `../firebase_core_tvos` and
+`../FlutterFramework` resolve) and leaves them out of the Podfile.
 
 ## License
 

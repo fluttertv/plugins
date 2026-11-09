@@ -1,3 +1,20 @@
+## 0.0.4
+
+* Add Swift Package Manager support: ships `tvos/Package.swift` (one Objective-C
+  target, `include/` as the public headers). flutter-tvos links a plugin that
+  ships `tvos/Package.swift` through Swift Package Manager and leaves it out of
+  the Podfile. The tvOS FlutterFire ports that depend on this package move to
+  SwiftPM in the same change and require `firebase_core_tvos: ^0.0.4`: a port
+  still on its podspec would no longer find the `firebase_core_tvos` pod.
+* Plugins now register with the Firebase SDK under SwiftPM too.
+  `FIRAppInternal.h` is not reachable there (firebase-ios-sdk vends
+  FirebaseCoreExtension as no product), so `REGISTER_LIB` was never defined and
+  `+[FIRApp registerLibrary:withVersion:]` was skipped. The method is now
+  declared locally when neither header is found, and the call first checks that
+  `FIRApp` responds to it.
+* `LIBRARY_VERSION` (podspec and Package.swift) now matches the package version.
+  It said 0.0.1.
+
 ## 0.0.3
 
 * Regenerate the native Pigeon sources from `firebase_core` 4.13.0, which decode the

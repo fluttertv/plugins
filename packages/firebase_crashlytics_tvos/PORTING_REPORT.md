@@ -138,6 +138,9 @@ upstream 5.3.0's `ios/firebase_crashlytics/Sources/`, verbatim except:
   `registrar.messenger()` branch also covers `os(tvOS)`.
 - `FirebaseCrashlyticsMessages.g.swift`: `import Flutter` also covers `os(tvOS)`.
 - Upstream's Swift and ObjC SPM targets are one pod (`DEFINES_MODULE`).
+  Since 0.0.3 the sources sit in upstream's two directories
+  (`Classes/firebase_crashlytics_tvos/`, `Classes/firebase_crashlytics_objc/`)
+  and `tvos/Package.swift` builds them as the same two SwiftPM targets.
 - Podspec: `Firebase/Crashlytics ~> 12.15.0` to match `firebase_core_tvos`
   (upstream uses 12.18.0).
 
