@@ -14,9 +14,9 @@ automatically. Apps that already use `cloud_functions` and target tvOS add:
 ```yaml
 dependencies:
   cloud_functions: ^6.3.3
-  cloud_functions_tvos: ^0.0.1
+  cloud_functions_tvos: ^0.0.2
   firebase_core: ^4.11.0
-  firebase_core_tvos: ^0.0.1 # tvOS core (this package depends on it)
+  firebase_core_tvos: ^0.0.4 # tvOS core (this package depends on it)
 ```
 
 > **Version alignment matters.** This package's native code matches the
@@ -35,6 +35,14 @@ dependencies:
 Full `cloud_functions` API is available on tvOS (callable functions +
 streaming callables, `httpsCallable`, region/emulator selection), no feature
 disables. Streaming requires tvOS 15+ (the pod floor).
+
+## Swift Package Manager
+
+This package ships a `tvos/Package.swift`. flutter-tvos links a plugin that
+ships `tvos/Package.swift` through Swift Package Manager and leaves it out of
+the Podfile. No manual setup is needed. It depends on `firebase_core_tvos`
+0.0.4, which ships one too, and takes firebase-ios-sdk `~> 12.15.0`, as in the
+podspec.
 
 ## License
 

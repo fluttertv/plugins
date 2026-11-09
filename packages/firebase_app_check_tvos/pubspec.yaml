@@ -2,7 +2,7 @@ name: firebase_app_check_tvos
 description: >-
   tvOS (Apple TV) implementation of the firebase_app_check Flutter plugin,
   providing Firebase App Check on Apple TV (App Attest / DeviceCheck).
-version: 0.0.2
+version: 0.0.3
 homepage: https://fluttertv.dev
 repository: https://github.com/fluttertv/plugins/tree/main/packages/firebase_app_check_tvos
 issue_tracker: https://github.com/fluttertv/plugins/issues
@@ -28,7 +28,9 @@ dependencies:
   # constraint but 0.0.1 does not constrain at all. Without this floor pub can
   # legally pick 0.0.1, whose native Pigeon expects the pre-8.1 FirebaseOptions
   # payload — a crash at launch instead of a solver error.
-  firebase_core_tvos: ^0.0.3
+  # ^0.0.4 (0.0.4 exactly): the first firebase_core_tvos with a
+  # tvos/Package.swift, which tvos/Package.swift here needs as a sibling.
+  firebase_core_tvos: ^0.0.4
 
 dev_dependencies:
   flutter_lints: ^4.0.0

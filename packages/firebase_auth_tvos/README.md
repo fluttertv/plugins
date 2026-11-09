@@ -16,7 +16,7 @@ it:
 ```yaml
 dependencies:
   firebase_auth: ^6.5.4
-  firebase_auth_tvos: ^0.0.1
+  firebase_auth_tvos: ^0.0.2
 ```
 
 The native plugin registers automatically through flutter-tvos' plugin
@@ -57,6 +57,14 @@ Calls into the unsupported methods return an `unsupported-platform`/
 
 - Apple TV running tvOS 15.0 or later (the Firebase Apple SDK's minimum).
 - `firebase_core_tvos` (pulled in automatically).
+
+## Swift Package Manager
+
+This package ships a `tvos/Package.swift`. flutter-tvos links a plugin that
+ships `tvos/Package.swift` through Swift Package Manager and leaves it out of
+the Podfile. No manual setup is needed. It depends on `firebase_core_tvos`
+0.0.4, which ships one too, and takes firebase-ios-sdk `~> 12.15.0`, as in the
+podspec.
 
 ## License
 

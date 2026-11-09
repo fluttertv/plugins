@@ -6,7 +6,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'cloud_functions_tvos'
-  s.version          = '0.0.1'
+  s.version          = '0.0.2'
   s.summary          = 'tvOS implementation of cloud_functions.'
   s.description      = <<-DESC
 tvOS implementation of cloud_functions, the federated platform

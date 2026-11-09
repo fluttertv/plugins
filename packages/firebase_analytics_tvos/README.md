@@ -14,9 +14,9 @@ automatically. Apps that already use `firebase_analytics` and target tvOS add:
 ```yaml
 dependencies:
     firebase_analytics: ^12.4.3
-    firebase_analytics_tvos: ^0.0.1
+    firebase_analytics_tvos: ^0.0.2
     firebase_core: ^4.11.0
-    firebase_core_tvos: ^0.0.1 # tvOS core (this package depends on it)
+    firebase_core_tvos: ^0.0.4 # tvOS core (this package depends on it)
 ```
 
 > **Version alignment matters.** This package's native code matches the
@@ -39,6 +39,14 @@ iOS-only). The handler is kept verbatim from upstream, so on tvOS that call is a
 **no-op** — it returns without error but sends no conversion data; don't build an
 on-device-conversion flow against it on tvOS. Events appear in Firebase
 **DebugView** when the app is launched with `-FIRDebugEnabled`.
+
+## Swift Package Manager
+
+This package ships a `tvos/Package.swift`. flutter-tvos links a plugin that
+ships `tvos/Package.swift` through Swift Package Manager and leaves it out of
+the Podfile. No manual setup is needed. It depends on `firebase_core_tvos`
+0.0.4, which ships one too, and takes firebase-ios-sdk `~> 12.15.0`, as in the
+podspec.
 
 ## License
 

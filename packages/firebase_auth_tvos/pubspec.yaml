@@ -2,7 +2,7 @@ name: firebase_auth_tvos
 description: >-
   tvOS (Apple TV) implementation of the firebase_auth Flutter plugin, supporting
   anonymous, email/password and Sign in with Apple authentication on Apple TV.
-version: 0.0.1
+version: 0.0.2
 homepage: https://fluttertv.dev
 repository: https://github.com/fluttertv/plugins/tree/main/packages/firebase_auth_tvos
 issue_tracker: https://github.com/fluttertv/plugins/issues
@@ -24,7 +24,9 @@ dependencies:
   # against locally instead of failing over to upstream's iOS-only pod.
   # Hosted constraint for pub.dev (path deps can't be published); local
   # development resolves it via pubspec_overrides.yaml until it's published.
-  firebase_core_tvos: ^0.0.1
+  # ^0.0.4 (0.0.4 exactly): the first firebase_core_tvos with a
+  # tvos/Package.swift, which tvos/Package.swift here needs as a sibling.
+  firebase_core_tvos: ^0.0.4
 
 dev_dependencies:
   flutter_lints: ^4.0.0

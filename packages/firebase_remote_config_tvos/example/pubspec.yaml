@@ -8,14 +8,22 @@ environment:
 
 dependencies:
   # firebase_core is pinned exact; its train picks the matching firebase_core_tvos
-  # (4.11.x -> pi 7.1.0 -> 0.0.2); floating it breaks the native Pigeon ABI.
-  firebase_core: 4.11.0
-  firebase_remote_config: 6.5.3
+  # (4.14.x -> pi 8.1.1 -> 0.0.3 and later); floating it breaks the native
+  # Pigeon ABI. firebase_core_tvos 0.0.4 requires firebase_core ^4.13.0.
+  firebase_core: 4.14.0
+  firebase_remote_config: 6.5.6
   firebase_remote_config_tvos:
     path: ../
-  firebase_core_tvos: ^0.0.1
+  firebase_core_tvos: ^0.0.4
   flutter:
     sdk: flutter
+
+# This plugin requires firebase_core_tvos ^0.0.4 (the first with a
+# tvos/Package.swift). Resolve it from the sibling package so the example
+# builds before that version is on pub.dev, and builds what this repo has.
+dependency_overrides:
+  firebase_core_tvos:
+    path: ../../firebase_core_tvos
 
 dev_dependencies:
   flutter_lints: ^4.0.0

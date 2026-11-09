@@ -14,6 +14,16 @@
 #elif __has_include(<FirebaseCoreExtension/FIRAppInternal.h>)
 #import <FirebaseCoreExtension/FIRAppInternal.h>
 #define REGISTER_LIB
+#else
+// Swift Package Manager: firebase-ios-sdk vends FirebaseCoreExtension, which
+// holds FIRAppInternal.h, as no product, so neither import above resolves and
+// the plugins would never be registered with Firebase. FIRApp implements
+// +registerLibrary:withVersion: in every SDK build; declare it here. The call
+// below checks for it at runtime.
+@interface FIRApp (FLTFirebaseRegisterLibrary)
++ (void)registerLibrary:(nonnull NSString *)name withVersion:(nonnull NSString *)version;
+@end
+#define REGISTER_LIB
 #endif
 
 @implementation FLTFirebasePluginRegistry {
@@ -42,8 +52,10 @@
 - (void)registerFirebasePlugin:(id<FLTFirebasePlugin>)firebasePlugin {
   // Register the library with the Firebase backend.
 #ifdef REGISTER_LIB
-  [FIRApp registerLibrary:[firebasePlugin firebaseLibraryName]
-              withVersion:[firebasePlugin firebaseLibraryVersion]];
+  if ([FIRApp respondsToSelector:@selector(registerLibrary:withVersion:)]) {
+    [FIRApp registerLibrary:[firebasePlugin firebaseLibraryName]
+                withVersion:[firebasePlugin firebaseLibraryVersion]];
+  }
 #endif
   // Store the plugin delegate for later usage.
   registeredPlugins[[firebasePlugin flutterChannelName]] = firebasePlugin;

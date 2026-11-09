@@ -16,7 +16,7 @@ it:
 ```yaml
 dependencies:
   firebase_core: ^4.13.0
-  firebase_core_tvos: ^0.0.3
+  firebase_core_tvos: ^0.0.4
 ```
 
 The native plugin registers automatically through flutter-tvos' plugin
@@ -42,6 +42,15 @@ matrices — see their respective `*_tvos` packages.
 ## Requirements
 
 - Apple TV running tvOS 15.0 or later (the Firebase Apple SDK's minimum).
+
+## Swift Package Manager
+
+This package ships a `tvos/Package.swift`. flutter-tvos links a plugin that
+ships `tvos/Package.swift` through Swift Package Manager and leaves it out of
+the Podfile. No manual setup is needed. Every tvOS FlutterFire port that depends
+on this package ships one too, from the version that requires
+`firebase_core_tvos: ^0.0.4`, so they link through SwiftPM together and share
+one firebase-ios-sdk (`~> 12.15.0`, as in the podspecs).
 
 ## License
 

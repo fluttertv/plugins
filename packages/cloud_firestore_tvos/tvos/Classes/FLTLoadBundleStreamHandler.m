@@ -12,6 +12,8 @@
 @import FirebaseFirestore;
 #if __has_include(<firebase_core_tvos/FLTFirebasePluginRegistry.h>)
 #import <firebase_core_tvos/FLTFirebasePluginRegistry.h>
+#elif __has_include(<firebase_core/FLTFirebasePluginRegistry.h>)  // SwiftPM
+#import <firebase_core/FLTFirebasePluginRegistry.h>
 #else
 #import "FLTFirebasePluginRegistry.h"
 #endif
