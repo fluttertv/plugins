@@ -1,3 +1,9 @@
+## 0.0.2
+
+* Add Swift Package Manager support: ships a `tvos/Package.swift`. flutter-tvos
+  links a plugin that has one through SwiftPM and leaves it out of the Podfile.
+  No API change.
+
 ## 0.0.1
 
 Initial release — tvOS implementation of `package_info_plus` for
