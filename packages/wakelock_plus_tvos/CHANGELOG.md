@@ -1,3 +1,10 @@
+## 0.0.2
+
+* **Fix:** ship the privacy manifest in the app. `PrivacyInfo.xcprivacy` was in
+  the package but not declared in the podspec, so it never reached the built
+  app, and App Store uploads could be rejected with ITMS-91061. The podspec now
+  declares it in `resource_bundles`, as upstream does.
+
 ## 0.0.1
 
 Initial release — tvOS implementation of `wakelock_plus` for

@@ -6,7 +6,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'firebase_messaging_tvos'
-  s.version          = '0.0.2'
+  s.version          = '0.0.3'
   s.summary          = 'tvOS implementation of firebase_messaging.'
   s.description      = <<-DESC
 tvOS implementation of firebase_messaging, the federated platform
@@ -18,6 +18,7 @@ package that ships native code targeting Apple tvOS.
   s.source           = { :path => '.' }
   s.source_files     = 'Classes/**/*.{h,m,mm,swift}'
   s.public_header_files = 'Classes/**/include/**/*.h'
+  s.resource_bundles = { "#{s.module_name}_Privacy" => ['Classes/Resources/PrivacyInfo.xcprivacy'] }
   # Firebase/Messaging 12.x requires tvOS 15.0+ — bumped from the porter's
   # generic 13.0 default to satisfy that dependency.
   s.platform         = :tvos, '15.0'
@@ -39,7 +40,7 @@ package that ships native code targeting Apple tvOS.
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
     'GCC_PREPROCESSOR_DEFINITIONS' =>
-      '$(inherited) LIBRARY_VERSION=\"0.0.2\" LIBRARY_NAME=\"flutter-fire-fcm-tvos\"',
+      '$(inherited) LIBRARY_VERSION=\"0.0.3\" LIBRARY_NAME=\"flutter-fire-fcm-tvos\"',
   }
 
   # The ported Classes/ call into FIRMessaging (Firebase/Messaging) and into

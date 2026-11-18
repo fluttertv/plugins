@@ -6,7 +6,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'url_launcher_tvos'
-  s.version          = '0.0.1'
+  s.version          = '0.0.2'
   s.summary          = 'tvOS implementation of url_launcher.'
   s.description      = <<-DESC
 tvOS implementation of url_launcher, the federated platform
@@ -17,7 +17,7 @@ package that ships native code targeting Apple tvOS.
   s.author           = { 'The FlutterTV Authors' => 'noreply@fluttertv.dev' }
   s.source           = { :path => '.' }
   s.source_files     = 'Classes/**/*.swift'
-  s.resource_bundles = { 'url_launcher_tvos_privacy' => ['Resources/PrivacyInfo.xcprivacy'] }
+  s.resource_bundles = { 'url_launcher_tvos_privacy' => ['Classes/Resources/PrivacyInfo.xcprivacy'] }
   s.platform         = :tvos, '13.0'
   s.swift_version    = '5.0'
 

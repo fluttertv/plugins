@@ -15,7 +15,7 @@ package **explicitly** alongside it:
 ```yaml
 dependencies:
     url_launcher: ^6.3.2
-    url_launcher_tvos: ^0.0.1
+    url_launcher_tvos: ^0.0.2
 ```
 
 Then use the `url_launcher` API as usual — but not every call behaves as it does

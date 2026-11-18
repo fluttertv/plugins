@@ -5,7 +5,7 @@
 import PackageDescription
 
 // Keep in step with `version:` in pubspec.yaml and `s.version` in the podspec.
-let libraryVersion = "0.0.2"
+let libraryVersion = "0.0.3"
 
 let package = Package(
   name: "firebase_messaging_tvos",
@@ -40,6 +40,9 @@ let package = Package(
         .product(name: "FlutterFramework", package: "FlutterFramework"),
       ],
       path: "Classes",
+      // The privacy manifest (Classes/Resources/PrivacyInfo.xcprivacy), so it
+      // reaches the app bundle as it does through the podspec's resource_bundles.
+      resources: [.process("Resources")],
       publicHeadersPath: "include",
       cSettings: [
         .headerSearchPath("include"),
