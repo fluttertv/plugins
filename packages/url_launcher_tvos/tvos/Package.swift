@@ -27,7 +27,10 @@ let package = Package(
       dependencies: [
         .product(name: "FlutterFramework", package: "FlutterFramework"),
       ],
-      path: "Classes"
+      path: "Classes",
+      // The privacy manifest (Classes/Resources/PrivacyInfo.xcprivacy), so it
+      // reaches the app bundle as it does through the podspec's resource_bundles.
+      resources: [.process("Resources")]
     ),
   ]
 )

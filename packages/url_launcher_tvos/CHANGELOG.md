@@ -1,3 +1,12 @@
+## 0.0.2
+
+* **Fix:** the privacy manifest now reaches the app when the package is linked
+  through Swift Package Manager, which flutter-tvos uses for any plugin that
+  ships a `tvos/Package.swift`. The SwiftPM target did not declare it, so the
+  app was missing it, and App Store uploads could be rejected with ITMS-91061.
+  `PrivacyInfo.xcprivacy` moves to `tvos/Classes/Resources/` (SwiftPM only
+  bundles resources inside the target directory) and the podspec follows.
+
 ## 0.0.1
 
 * Initial tvOS implementation of `url_launcher`, ported from `url_launcher_ios`
