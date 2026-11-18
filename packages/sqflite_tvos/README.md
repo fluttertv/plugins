@@ -11,7 +11,7 @@ for [flutter-tvos](https://github.com/fluttertv/flutter-tvos)
 ```yaml
 dependencies:
   sqflite: ^2.x
-  sqflite_tvos: ^0.0.1
+  sqflite_tvos: ^0.0.3
   path_provider_tvos: ^0.0.1   # for a writable DB directory
 ```
 
