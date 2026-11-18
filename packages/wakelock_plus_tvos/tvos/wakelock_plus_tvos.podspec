@@ -6,7 +6,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'wakelock_plus_tvos'
-  s.version          = '0.0.1'
+  s.version          = '0.0.2'
   s.summary          = 'tvOS implementation of wakelock_plus.'
   s.description      = <<-DESC
 tvOS implementation of wakelock_plus, the federated platform
@@ -18,6 +18,7 @@ package that ships native code targeting Apple tvOS.
   s.source           = { :path => '.' }
   s.source_files     = 'Classes/**/*'
   s.public_header_files = 'Classes/**/*.h'
+  s.resource_bundles = { 'wakelock_plus_tvos_privacy' => ['Resources/PrivacyInfo.xcprivacy'] }
   s.platform         = :tvos, '13.0'
   s.swift_version    = '5.0'
 
