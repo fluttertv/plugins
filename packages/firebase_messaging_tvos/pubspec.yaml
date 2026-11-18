@@ -2,7 +2,7 @@ name: firebase_messaging_tvos
 description: >-
   tvOS (Apple TV) implementation of the firebase_messaging Flutter plugin,
   providing Firebase Cloud Messaging push notifications on Apple TV.
-version: 0.0.2
+version: 0.0.3
 homepage: https://fluttertv.dev
 repository: https://github.com/fluttertv/plugins/tree/main/packages/firebase_messaging_tvos
 issue_tracker: https://github.com/fluttertv/plugins/issues
