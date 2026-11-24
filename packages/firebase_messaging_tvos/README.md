@@ -16,7 +16,7 @@ alongside it:
 ```yaml
 dependencies:
   firebase_messaging: ^16.4.1
-  firebase_messaging_tvos: ^0.0.2
+  firebase_messaging_tvos: ^0.0.3
 ```
 
 The native plugin registers automatically through flutter-tvos' plugin

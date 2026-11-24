@@ -15,7 +15,7 @@ this package directly alongside it:
 ```yaml
 dependencies:
   shared_preferences: ^2.x
-  shared_preferences_tvos: ^0.0.2
+  shared_preferences_tvos: ^0.0.3
 ```
 
 Use `shared_preferences` exactly as on iOS — the tvOS implementation

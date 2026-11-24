@@ -13,7 +13,7 @@ for [flutter-tvos](https://github.com/fluttertv/flutter-tvos)
 ```yaml
 dependencies:
   video_player: ^2.x
-  video_player_tvos: ^0.0.1
+  video_player_tvos: ^0.0.2
   # Required only if you use VideoPlayerController.file with a temp path:
   path_provider_tvos: ^0.0.1
 ```

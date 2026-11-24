@@ -28,6 +28,9 @@ let package = Package(
         .product(name: "FlutterFramework", package: "FlutterFramework"),
       ],
       path: "Classes",
+      // The privacy manifest (Classes/Resources/PrivacyInfo.xcprivacy), so it
+      // reaches the app bundle as it does through the podspec's resource_bundles.
+      resources: [.process("Resources")],
       swiftSettings: [
         // Keep Swift `#if TARGET_OS_TV` branches active, matching the podspec.
         .define("TARGET_OS_TV"),

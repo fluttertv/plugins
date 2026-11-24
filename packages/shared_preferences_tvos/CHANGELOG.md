@@ -1,3 +1,12 @@
+## 0.0.3
+
+* **Fix:** ship the privacy manifest in the app. `PrivacyInfo.xcprivacy` was in
+  the package but declared by neither the podspec nor `Package.swift`, so it
+  never reached the built app, and App Store uploads could be rejected with
+  ITMS-91061. It moves to `tvos/Classes/Resources/` (SwiftPM only bundles
+  resources inside the target directory) and is declared in both, as upstream
+  does.
+
 ## 0.0.2
 
 * Add Swift Package Manager support: ships a `tvos/Package.swift` so the

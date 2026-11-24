@@ -6,7 +6,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'shared_preferences_tvos'
-  s.version          = '0.0.2'
+  s.version          = '0.0.3'
   s.summary          = 'tvOS implementation of shared_preferences.'
   s.description      = <<-DESC
 tvOS implementation of shared_preferences, the federated platform
@@ -16,8 +16,9 @@ package that ships native code targeting Apple tvOS.
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'The FlutterTV Authors' => 'noreply@fluttertv.dev' }
   s.source           = { :path => '.' }
-  s.source_files     = 'Classes/**/*'
+  s.source_files     = 'Classes/**/*.{h,m,mm,swift}'
   s.public_header_files = 'Classes/**/*.h'
+  s.resource_bundles = { 'shared_preferences_tvos_privacy' => ['Classes/Resources/PrivacyInfo.xcprivacy'] }
   s.platform         = :tvos, '13.0'
   s.swift_version    = '5.0'
 
